@@ -38,11 +38,14 @@ rust-analyzer returns nothing inside `#[serde(...)]` or `#[arg(...)]`, so the ke
 },
 {
   "saghen/blink.cmp",
+  version = "1.*", -- blink.cmp 2.x needs saghen/blink.lib too; the sources are written against 1.x
   opts = function(_, opts)
     return require("xyno_macros").blink_opts(opts)
   end,
 },
 ```
+
+The blink.cmp spec calls `require("xyno_macros")` when blink.cmp starts, which loads this plugin (and its dependencies) at startup and registers the commands before a Rust file is open; the `ft` and `cmd` lines only matter if you leave the blink.cmp spec out. blink.cmp is pinned to `1.*` because 2.x refuses to load without saghen/blink.lib, and I only tried the sources against 1.x.
 
 Load the plugin with `ft = "rust"` (as above) or `event = "VeryLazy"`: the signature popup and the hints start with `setup()`.
 
@@ -61,7 +64,7 @@ Load the plugin with `ft = "rust"` (as above) or `event = "VeryLazy"`: the signa
 
 No global keymap is set by default. `keymaps = true` maps `<leader>rx` (expand), `<leader>rq` (status) and insert-mode `<C-k>` (the macro popup first, `vim.lsp.buf.signature_help` when the cursor is not in a macro call), buffer-local in Rust buffers that have a rust-analyzer client attached. A table maps only what you list, to the keys you choose.
 
-`snippets_allowed(ctx)` gets blink's context (`line`, `cursor`, `bufnr`). The default offers the snippets neither after a `.` nor inside a string or comment.
+`snippets_allowed(ctx)` gets blink's context (`line`, `cursor`, `bufnr`). The default offers the snippets neither after a `.` nor inside a string or comment. It does not carry over the original configuration's own expression-node check, so `select!` or `matches!` can be offered in a few places the original blocked; set `snippets_allowed` to decide differently.
 
 `attrs` overrides values of `require("xyno_macros.attrs").config`: `context_lines = 15` (how far above the cursor an attribute may start), `window_min = 1500` and `window_lines = 300` (longer files are parsed around the cursor only), `learn_ttl = 120`, `learn_max_files = 300`, `learn_max_bytes`, `derive_max_files = 80`, `derive_max_bytes`, `import_attempts = 10`, `import_interval = 500`, and `user_dir = ".xyno-macros/attrs"` (the project schema directory).
 

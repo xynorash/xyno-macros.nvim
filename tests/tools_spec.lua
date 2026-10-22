@@ -1034,3 +1034,56 @@ describe("live rust-analyzer", function()
     end, 60000, "procMacro_ignored in rust-analyzer's config (rust-analyzer.toml)")
   end)
 end)
+
+-- The default snippet guard replaces the original configuration's own
+-- expression-node check: it only knows "after a dot", "in a string" and "in a
+-- comment".
+describe("tools.snippets_allowed (default)", function()
+  local function ctx_for(line, col)
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, { line })
+    vim.bo[buf].filetype = "rust"
+    return { line = line, cursor = { 1, col or #line }, bufnr = buf }
+  end
+
+  local function has_parser()
+    return (pcall(vim.treesitter.language.add, "rust"))
+  end
+
+  after_each(function()
+    mt.config.snippets_allowed = nil
+  end)
+
+  it("is allowed at the start of a statement", function()
+    H.eq(true, mt.snippets_allowed(ctx_for("    ")))
+    H.eq(true, mt.snippets_allowed(ctx_for("    let x = ma")))
+  end)
+
+  it("is refused after a dot", function()
+    H.eq(false, mt.snippets_allowed(ctx_for("    foo.ma")))
+    H.eq(false, mt.snippets_allowed(ctx_for("    foo.")))
+  end)
+
+  it("is allowed after a range operator (not a method call)", function()
+    H.eq(true, mt.snippets_allowed(ctx_for("    let r = 0..ma")))
+  end)
+
+  it("is refused inside a string and a comment", function()
+    if not has_parser() then
+      return skip("no rust tree-sitter parser")
+    end
+    local c = ctx_for('let s = "ab", 9;', 11)
+    vim.treesitter.get_parser(c.bufnr, "rust"):parse()
+    H.eq(false, mt.snippets_allowed(c))
+    local d = ctx_for("// note ma")
+    vim.treesitter.get_parser(d.bufnr, "rust"):parse()
+    H.eq(false, mt.snippets_allowed(d))
+  end)
+
+  it("a configured function decides instead", function()
+    mt.config.snippets_allowed = function()
+      return false
+    end
+    H.eq(false, mt.snippets_allowed(ctx_for("    ")))
+  end)
+end)

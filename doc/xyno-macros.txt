@@ -80,6 +80,7 @@ For blink.cmp, register both sources with |xyno_macros.blink_opts()|:
 >lua
     {
       "saghen/blink.cmp",
+      version = "1.*",
       opts = function(_, opts)
         return require("xyno_macros").blink_opts(opts)
       end,
@@ -88,6 +89,10 @@ For blink.cmp, register both sources with |xyno_macros.blink_opts()|:
 It adds the provider `macro_attrs` (module `xyno_macros.attrs`, score_offset
 100, for Rust buffers, next to the default sources) and `macro_tools` (module
 `xyno_macros.tools`, the snippets, added to `sources.default`).
+
+Pin blink.cmp to `version = "1.*"`: the sources were tried against 1.x, and
+2.x refuses to load without saghen/blink.lib. This spec loads xyno-macros when
+blink.cmp starts, so it is not lazy-loaded by `ft` or `cmd`.
 
 ==============================================================================
 4. COMMANDS                                                    *xyno-macros-commands*
