@@ -1,0 +1,200 @@
+*xyno-macros.txt*  Rust macro help: attribute completion, signature help, expansion
+
+                             xyno-macros.nvim
+
+==============================================================================
+CONTENTS                                                    *xyno-macros-contents*
+
+  1. Introduction ............................. |xyno-macros|
+  2. Requirements ............................. |xyno-macros-requirements|
+  3. Setup and options ........................ |xyno-macros-setup|
+  4. Commands ................................. |xyno-macros-commands|
+  5. Keymaps .................................. |xyno-macros-keymaps|
+  6. Completion data .......................... |xyno-macros-data|
+  7. Lua API .................................. |xyno-macros-api|
+  8. How it works ............................. |xyno-macros-how|
+  9. Platforms ................................ |xyno-macros-platforms|
+  10. License and origin ...................... |xyno-macros-license|
+
+==============================================================================
+1. INTRODUCTION                                                    *xyno-macros*
+
+xyno-macros.nvim helps with Rust macros: completion inside helper-attribute
+arguments (`#[serde(`, `#[arg(`, `#[tokio::main(`) and `#[derive(` from JSON
+schemas per crate, the arms of a `macro_rules!` while you write a call,
+expansion of the macro under the cursor, and the status of the proc-macro
+crates.
+
+The macro expansion view and the macro-aware completion are inspired by what
+the JetBrains Rust tooling does with macros, which I still use. This plugin is
+independent and not affiliated with JetBrains.
+
+==============================================================================
+2. REQUIREMENTS                                            *xyno-macros-requirements*
+
+  - Neovim 0.12+
+  - xyno-rust.nvim (https://github.com/xynorash/xyno-rust.nvim)
+  - xyno-imports.nvim (https://github.com/xynorash/xyno-imports.nvim)
+    both are checked in |xyno_macros.setup()|: without one, one error line is
+    shown and the plugin does not start
+  - rust-analyzer started through vim.lsp; rustaceanvim (`:RustLsp`) for the
+    proc-macro rebuild key of |:ProcMacroStatus|
+  - `cargo` in $PATH; `cargo-expand` as the fallback of |:MacroExpand|
+  - the tree-sitter `rust` parser
+  - optional: blink.cmp for the completion sources
+
+==============================================================================
+3. SETUP AND OPTIONS                                              *xyno-macros-setup*
+
+                                                           *xyno_macros.setup()*
+>lua
+    require("xyno_macros").setup({
+      commands = true,        -- :MacroAttrs :MacroExpand :MacroFormatFix
+                              -- :MacroSignature :ProcMacroStatus
+      keymaps = false,        -- false | true | { expand, status, signature }
+      snippets_allowed = nil, -- function(ctx) -> boolean
+      attrs = {},             -- tuning of the attribute completion
+    })
+<
+Safe to call again.
+
+`snippets_allowed(ctx)` decides where the `select!`, `matches!` and
+`vec![x; n]` snippets appear; ctx is blink's context (line, cursor, bufnr).
+The default offers them neither after a `.` nor inside a string or comment.
+
+                                                           *xyno-macros-config*
+`attrs` overrides values of `require("xyno_macros.attrs").config`:
+
+  context_lines    15    how far above the cursor an attribute may start
+  window_min       1500  longer files are parsed around the cursor only
+  window_lines     300
+  learn_ttl        120   seconds a learn-from-usage scan stays cached
+  learn_max_files  300
+  derive_max_files 80    per proc-macro crate
+  import_attempts  10    tries of the import after an accepted derive
+  import_interval  500   ms between them
+  user_dir  ".xyno-macros/attrs"   project schema directory
+
+                                                            *xyno-macros-blink*
+For blink.cmp, register both sources with |xyno_macros.blink_opts()|:
+>lua
+    {
+      "saghen/blink.cmp",
+      opts = function(_, opts)
+        return require("xyno_macros").blink_opts(opts)
+      end,
+    }
+<
+It adds the provider `macro_attrs` (module `xyno_macros.attrs`, score_offset
+100, for Rust buffers, next to the default sources) and `macro_tools` (module
+`xyno_macros.tools`, the snippets, added to `sources.default`).
+
+==============================================================================
+4. COMMANDS                                                    *xyno-macros-commands*
+
+                                                                *:MacroExpand*
+:MacroExpand
+    Expand the macro under the cursor (rust-analyzer/expandMacro) in a
+    read-only split. <CR> steps into the macro call under the cursor, <BS>
+    goes back, `gi` lists the generated items, `q` closes. Falls back to
+    `cargo expand` where rust-analyzer expands nothing.
+
+                                                              *:MacroFormatFix*
+:MacroFormatFix
+    Append the missing arguments (`todo!()`) of the format macro call at the
+    cursor.
+
+                                                              *:MacroSignature*
+:MacroSignature
+    Show the matcher arms of the `macro_rules!` call at the cursor, and the
+    format-string and sqlx bind hints. The popup also opens after `(`, `[`,
+    `{` or `!` in insert mode.
+
+                                                             *:ProcMacroStatus*
+:ProcMacroStatus
+    List the proc-macro crates of the workspace, the macros that were not
+    expanded and rust-analyzer's view. In the window: `r` rebuilds the proc
+    macros, `R` refreshes, `i` or <CR> on a crate writes it to
+    `procMacro.ignored` in `rust-analyzer.toml`, <CR> on a diagnostic jumps
+    to it, `q` closes.
+
+                                                                 *:MacroAttrs*
+:MacroAttrs
+    Show what the attribute completion sees at the cursor: attribute, target,
+    schemas, where the dependencies came from. For a missing completion.
+
+==============================================================================
+5. KEYMAPS                                                    *xyno-macros-keymaps*
+
+No global keymap is set. `keymaps = true` maps, buffer-local in Rust buffers
+with a rust-analyzer client:
+
+  <leader>rx    |:MacroExpand|
+  <leader>rq    |:ProcMacroStatus|
+  i_<C-k>       the macro popup first, vim.lsp.buf.signature_help() when the
+                cursor is not in a macro call
+
+A table maps only the actions you list, to the keys you choose (`false` skips
+one): `{ expand = "<leader>me", status = false, signature = "<C-s>" }`.
+
+==============================================================================
+6. COMPLETION DATA                                                  *xyno-macros-data*
+
+One JSON file per crate in `data/macro_attrs/` of the plugin directory (the
+format is in `data/macro_attrs/README.md`). A schema applies when the
+workspace member depends on the crate, the version is in the range of the file
+and the helper is in scope. A project adds or overrides schemas with
+`.xyno-macros/attrs/*.json` in the workspace root; |:MacroAttrs| lists broken
+files.
+
+==============================================================================
+7. LUA API                                                          *xyno-macros-api*
+
+                                                       *xyno_macros.blink_opts()*
+require("xyno_macros").blink_opts({opts})   see |xyno-macros-blink|
+
+                                                            *xyno_macros.attrs*
+`require("xyno_macros.attrs")`:
+  items({bufnr}, {row}, {col})    the completion items at a position
+  shipped()                       crate -> shipped schema file
+  schemas({root}?)                shipped schemas with the project's applied
+  on_derive_accepted              hook `fn(name, info)` called when a derive
+                                  that is not imported was accepted; replace
+                                  it to plug in another import
+  config                          |xyno-macros-config|
+
+                                                            *xyno_macros.tools*
+`require("xyno_macros.tools")`:
+  expand(), format_fix(), signature({buf}, {opts}), proc_macro_status()
+                                  what the commands call
+  lex({text})                     Rust token lexer used by the macro help
+  snippets_allowed({ctx})         the snippet guard (|xyno-macros-setup|)
+
+==============================================================================
+8. HOW IT WORKS                                                      *xyno-macros-how*
+
+A small lexer reads the attribute from its `#[` to the cursor and says which
+key or value is being typed. The buffer is parsed with the attribute repaired
+so tree-sitter can say what it is attached to. Dependencies come from cargo
+metadata once cached and from a scan of `Cargo.toml` until then; nothing
+blocks. The macro tools lex Rust tokens, find the `macro_rules!` definition
+through the language server and match the call against its arms.
+
+==============================================================================
+9. PLATFORMS                                                  *xyno-macros-platforms*
+
+  Linux    tested by the specs of this repository; the completion-menu specs
+           need blink.cmp and skip without it
+  Windows  the guards of the original code are kept; no evidence from this
+           repository; in xynovim's CI the live rust-analyzer flows, among
+           them the macro tool specs, failed or hung there
+  macOS    nothing tested here; the live macro tool specs hung once in
+           xynovim's CI and the macOS runs were not stable
+
+==============================================================================
+10. LICENSE AND ORIGIN                                         *xyno-macros-license*
+
+MIT, Copyright (c) 2026 Xynorash. Extracted from xynovim
+(https://github.com/xynorash/xynovim), my Neovim configuration for Rust.
+
+ vim:tw=78:ts=8:ft=help:norl:
