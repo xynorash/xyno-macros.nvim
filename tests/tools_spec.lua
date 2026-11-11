@@ -16,6 +16,7 @@ after_each(function()
     pcall(c.stop, c, true)
   end
   pcall(vim.cmd, "cd " .. vim.fn.fnameescape(vim.env.HOME or "/"))
+  require("xyno_macros.trust").config.provider = "auto"
 end)
 
 --- Run fn with FileType autocmds ignored (no rustaceanvim attach).
@@ -926,6 +927,10 @@ describe("live rust-analyzer", function()
     if vim.fn.executable("cargo-expand") ~= 1 then
       H.skip_file("cargo-expand is not installed")
     end
+    -- cargo expand is gated by a trust decision (tests/trust_spec.lua): agree here
+    require("xyno_macros.trust").config.provider = function(_, _, cb)
+      cb(true)
+    end
     local _, buf = open_lab()
     local row, col = find(buf, "macro_rules! pair")
     local drow, dcol = find(buf, "Serialize, Deserialize")
@@ -1035,9 +1040,9 @@ describe("live rust-analyzer", function()
   end)
 end)
 
--- The default snippet guard replaces the original configuration's own
--- expression-node check: it only knows "after a dot", "in a string" and "in a
--- comment".
+-- The default snippet guard is the original configuration's: "after a dot", "in
+-- a string", "in a comment" and the expression-node check (tests/trust_spec.lua
+-- has the expression cases).
 describe("tools.snippets_allowed (default)", function()
   local function ctx_for(line, col)
     local buf = vim.api.nvim_create_buf(false, true)

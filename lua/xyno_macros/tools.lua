@@ -1290,8 +1290,30 @@ Source.__index = Source
 
 --- blink.cmp calls module.new(opts) for a provider with module = "xyno_macros.tools".
 --- Are the snippets (select!, matches!, vec![x; n]) offered at ctx's position? Not after a
---- `.` and not inside a string or comment. Replace it (setup() option `snippets_allowed`)
+--- `.`, not inside a string or comment, and not in an expression position (call
+--- arguments, struct literal fields, macro token trees; a block inside them is a
+--- statement position again). The same guard xynovim used before the extraction. Replace it (setup() option `snippets_allowed`)
 --- to decide differently; it gets blink's context (line, cursor, bufnr).
+--- Whether the innermost bracket still open between the start of the (error) node and the
+--- cursor is a `(` or `[`: `call(a, be` while typing has no `arguments` node yet.
+local function unclosed_paren(node, ctx)
+  local srow, scol = node:start()
+  if srow ~= ctx.cursor[1] - 1 then
+    return false
+  end
+  local stack = {}
+  for ch in ctx.line:sub(scol + 1, ctx.cursor[2]):gmatch("[%(%)%[%]{}]") do
+    if ch == "(" or ch == "[" or ch == "{" then
+      stack[#stack + 1] = ch
+    else
+      stack[#stack] = nil
+    end
+  end
+  return stack[#stack] == "(" or stack[#stack] == "["
+end
+
+local EXPRESSION_NODES = { arguments = true, field_initializer_list = true, token_tree = true }
+
 function M.snippets_allowed(ctx)
   if type(M.config.snippets_allowed) == "function" then
     return M.config.snippets_allowed(ctx)
@@ -1310,6 +1332,15 @@ function M.snippets_allowed(ctx)
     -- a literal ends at its closing quote: the cursor behind it is outside
     local behind = t:find("literal$") and erow == ctx.cursor[1] - 1 and ecol <= ctx.cursor[2]
     if (t:find("string") or t:find("comment")) and not behind then
+      return false
+    end
+    if t == "block" then
+      break -- statement position (a closure body inside call arguments)
+    end
+    if EXPRESSION_NODES[t] then
+      return false -- call arguments, struct literal fields, macro token trees
+    end
+    if t == "ERROR" and unclosed_paren(node, ctx) then
       return false
     end
     node = node:parent()
@@ -1797,26 +1828,39 @@ local function cargo_expand_fallback(bufnr, push)
     if not argv then
       return vim.notify("cargo expand fallback: " .. scope, vim.log.levels.WARN)
     end
-    vim.notify("rust-analyzer expanded nothing: running cargo expand for " .. scope .. " ...", vim.log.levels.INFO)
-    vim.system(argv, { text = true, cwd = meta.root, timeout = 180000 }, vim.schedule_wrap(function(r)
-      if r.code ~= 0 then
-        local msg = vim.trim(r.stderr or "")
-        if msg:find("nightly", 1, true) or msg:find("-Z", 1, true) then
-          msg = "cargo expand needs a nightly toolchain for this (rustup toolchain install nightly): " .. msg:sub(1, 200)
-        end
-        return vim.notify("cargo expand failed: " .. msg:sub(1, 400), vim.log.levels.WARN)
+    -- cargo expand BUILDS the crate: build.rs and proc macros of the project and its
+    -- dependencies run. Never without a trust decision for the workspace.
+    require("xyno_macros.trust").require(meta.root, "cargo expand (" .. scope .. ")", function(trusted)
+      if not trusted then
+        return
       end
-      local lines = vim.split(r.stdout, "\n", { plain = true })
-      lens.origin = lens.origin or { bufnr = bufnr, row = 0 }
-      lens.origin.bufnr = bufnr
-      local level = { label = "cargo expand", lines = lines, note = "FALLBACK (cargo expand, " .. scope .. ")" }
-      if not push then
-        lens.stack = {}
-      end
-      lens_push(level)
-    end))
+      vim.notify("rust-analyzer expanded nothing: running cargo expand for " .. scope .. " ...", vim.log.levels.INFO)
+      M._run_cargo_expand(argv, meta.root, bufnr, scope, push)
+    end)
   end)
 end
+
+function M._run_cargo_expand(argv, cwd, bufnr, scope, push)
+  vim.system(argv, { text = true, cwd = cwd, timeout = 180000 }, vim.schedule_wrap(function(r)
+    if r.code ~= 0 then
+      local msg = vim.trim(r.stderr or "")
+      if msg:find("nightly", 1, true) or msg:find("-Z", 1, true) then
+        msg = "cargo expand needs a nightly toolchain for this (rustup toolchain install nightly): " .. msg:sub(1, 200)
+      end
+      return vim.notify("cargo expand failed: " .. msg:sub(1, 400), vim.log.levels.WARN)
+    end
+    local lines = vim.split(r.stdout, "\n", { plain = true })
+    lens.origin = lens.origin or { bufnr = bufnr, row = 0 }
+    lens.origin.bufnr = bufnr
+    local level = { label = "cargo expand", lines = lines, note = "FALLBACK (cargo expand, " .. scope .. ")" }
+    if not push then
+      lens.stack = {}
+    end
+    lens_push(level)
+  end))
+end
+
+M.cargo_expand_fallback = cargo_expand_fallback
 
 --- :MacroExpand - expand the macro under the cursor. opts: bufnr, row, col
 --- (0-based), push (keep the stack: stepping), step.
