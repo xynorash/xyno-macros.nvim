@@ -65,17 +65,6 @@ The default refuses after a `.`, in strings and comments and in expression
 positions (call arguments, struct literal fields, macro token trees).
 
                                                         *xyno-macros-trust*
-`cargo expand` builds the crate (build.rs, proc macros run), so |:MacroExpand|'s
-fallback asks for workspace trust first. `trust = "auto"` uses
-xyno_rust.trust (:RustTrust) when installed, else this plugin's interim check
-(stdpath("state")/xyno-macros/trust.json); "local" forces the interim check; a
-function(root, what, cb) replaces both. rust-analyzer's own expansion is not
-gated here. See |:checkhealth| xyno_macros for the provider in use.
-The default offers them neither after a `.`, nor inside a string or comment,
-nor in an expression position (call arguments, struct literal fields, macro
-token trees).
-
-                                                        *xyno-macros-trust*
 `cargo expand` builds the crate (build.rs and proc macros run), so
 |:MacroExpand|'s fallback asks for workspace trust first. `trust = "auto"` uses
 xyno_rust.trust (:RustTrust) when installed, else this plugin's interim check
