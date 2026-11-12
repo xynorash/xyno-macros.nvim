@@ -84,3 +84,42 @@ describe("setup", function()
     H.eq(H.repo .. "/data/macro_attrs/serde.json", shipped.serde.source)
   end)
 end)
+
+describe("xyno-rust.nvim API pin", function()
+  local rust = require("xyno_rust")
+  local saved = rust.api_version
+  after_each(function()
+    rust.api_version = saved
+  end)
+
+  local function setup_with(version)
+    rust.api_version = version
+    local notes, orig = {}, vim.notify
+    vim.notify = function(msg, level)
+      notes[#notes + 1] = { msg = msg, level = level }
+    end
+    local ok, err = pcall(require("xyno_macros").setup, {})
+    vim.notify = orig
+    H.ok(ok, tostring(err))
+    return notes
+  end
+
+  it("states the API it needs and accepts it", function()
+    local want = require("xyno_macros").requires_rust_api
+    H.match(want, "^%d+%.%d+$")
+    H.eq(true, (rust.compatible(want)))
+  end)
+
+  it("a newer major of xyno-rust.nvim: one clear error line, nothing started", function()
+    local notes = setup_with("2.0")
+    H.eq(1, #notes)
+    H.match(notes[1].msg, "xyno-macros: xyno-rust api 2.0 is installed", true)
+    H.eq(vim.log.levels.ERROR, notes[1].level)
+  end)
+
+  it("an older minor of xyno-rust.nvim says to update it", function()
+    local notes = setup_with("1.0")
+    H.eq(1, #notes)
+    H.match(notes[1].msg, "update xyno-rust.nvim", true)
+  end)
+end)

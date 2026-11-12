@@ -13,7 +13,7 @@ rust-analyzer returns nothing inside `#[serde(...)]` or `#[arg(...)]`, so the ke
 ## Requirements
 
 - Neovim 0.12+
-- [xyno-rust.nvim](https://github.com/xynorash/xyno-rust.nvim) (modules `crate_meta`, `code_actions`, `fsutil`, `rust_context`)
+- [xyno-rust.nvim](https://github.com/xynorash/xyno-rust.nvim) (modules `crate_meta`, `code_actions`, `fsutil`, `rust_context`) `setup()` also checks the API version (`require("xyno_rust").compatible(require("xyno_macros").requires_rust_api)`, now `1.1`): a xyno-rust.nvim with another major or an older minor gives one error line naming the fix, and nothing starts. The CI workflow fetches the dependencies by tag (`XYNO_RUST_REF`, `XYNO_IMPORTS_REF`), never `main`; pin your own plugin manager the same way (`tag = "v0.2.0"` or a commit) so a breaking major cannot arrive unannounced.
 - [xyno-imports.nvim](https://github.com/xynorash/xyno-imports.nvim) (the import of an accepted derive goes through its engine)
 - rust-analyzer started through `vim.lsp` (I use [rustaceanvim](https://github.com/mrcjkb/rustaceanvim)); the proc-macro rebuild key of the status window uses its `:RustLsp`
 - `cargo` in `$PATH` (workspace and dependency metadata); `cargo-expand` is the fallback of `:MacroExpand` where rust-analyzer expands nothing
