@@ -139,6 +139,11 @@ describe("cargo expand trust provider", function()
     local buf, dir, canary = setup_crate()
     local seen
     package.loaded["xyno_rust.trust"] = {
+      -- xyno-rust's own crate_meta asks is_trusted for `cargo metadata`; this stub trusts that
+      -- (the refusal under test is for cargo expand only)
+      is_trusted = function()
+        return true
+      end,
       require = function(root, what, cb)
         seen = { root = root, what = what }
         cb(false)
