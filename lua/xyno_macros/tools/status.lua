@@ -450,6 +450,10 @@ function M.proc_macro_status(opts)
         report.win = vim.api.nvim_get_current_win()
       end
       vim.api.nvim_win_set_buf(report.win, report.buf)
+      -- the first line carries the project path: wrap it at words instead of cutting it at the window edge
+      vim.wo[report.win].wrap = true
+      vim.wo[report.win].linebreak = true
+      vim.wo[report.win].breakindent = true
       pcall(vim.api.nvim_buf_set_name, report.buf, "proc-macro-status")
       report_draw()
     end
