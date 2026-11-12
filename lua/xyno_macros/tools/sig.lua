@@ -200,19 +200,27 @@ local function open_popup(lines, marks)
   vim.api.nvim_buf_clear_namespace(sig.buf, ns, 0, -1)
   for _, mk in ipairs(marks or {}) do
     vim.api.nvim_buf_set_extmark(sig.buf, ns, mk.line - 1, 0, {
-      line_hl_group = mk.best and "PmenuSel" or nil,
+      line_hl_group = mk.best and "XynoMacrosBest" or nil,
       end_row = mk.line - 1,
-      hl_group = (not mk.best and not mk.viable) and "Comment" or nil,
+      hl_group = (not mk.best and not mk.viable) and "XynoMacrosDim" or nil,
       end_col = (not mk.best and not mk.viable) and #lines[mk.line] or nil,
     })
   end
-  local width = 20
+  local lay = require("xyno_macros.ui").popup
+  local width = lay.min_width
   for _, l in ipairs(lines) do
     width = math.max(width, vim.fn.strdisplaywidth(l))
   end
-  width = math.min(width, math.max(30, vim.o.columns - 6))
-  local height = math.min(#lines, 14)
-  local below = vim.fn.winline() + height + 3 < vim.o.lines
+  width = math.min(width, lay.max_width or math.max(30, vim.o.columns - 6))
+  local height = math.min(#lines, lay.max_height)
+  local fits_below = vim.fn.winline() + height + 3 < vim.o.lines
+  local fits_above = vim.fn.winline() - 1 >= height + 2
+  local below = fits_below
+  if lay.prefer == "above" and fits_above then
+    below = false
+  elseif not fits_below and not fits_above then
+    below = vim.fn.winline() <= vim.o.lines / 2
+  end
   local cfg = {
     relative = "cursor",
     row = below and 1 or 0,
@@ -223,7 +231,7 @@ local function open_popup(lines, marks)
     style = "minimal",
     focusable = false,
     noautocmd = true,
-    border = vim.o.winborder ~= "" and vim.o.winborder or "rounded",
+    border = lay.border or (vim.o.winborder ~= "" and vim.o.winborder or "rounded"),
   }
   if sig.win and vim.api.nvim_win_is_valid(sig.win) then
     vim.api.nvim_win_set_config(sig.win, cfg)
@@ -231,7 +239,7 @@ local function open_popup(lines, marks)
   else
     sig.win = vim.api.nvim_open_win(sig.buf, false, cfg)
     vim.wo[sig.win].wrap = false
-    vim.wo[sig.win].winhighlight = "NormalFloat:NormalFloat,FloatBorder:FloatBorder"
+    vim.wo[sig.win].winhighlight = "NormalFloat:XynoMacrosFloat,FloatBorder:XynoMacrosBorder"
   end
 end
 

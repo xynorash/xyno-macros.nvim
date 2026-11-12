@@ -1,0 +1,124 @@
+{
+  "crate": "tracing",
+  "versions": ">=0.1.21, <0.2.0",
+  "docs_url": "https://docs.rs/tracing/latest/tracing/",
+  "verified": "2026-11-12 against docs.rs, tracing-attributes 0.1.31 (instrument)",
+  "attributes": [
+    {
+      "name": "tracing::instrument",
+      "applies_to": [
+        "fn"
+      ],
+      "docs_url": "https://docs.rs/tracing-attributes/latest/tracing_attributes/attr.instrument.html",
+      "args": [
+        {
+          "key": "name",
+          "kind": "string",
+          "doc": "Name of the generated span; defaults to the function name.",
+          "snippet": "name = \"${1:span}\""
+        },
+        {
+          "key": "target",
+          "kind": "string",
+          "doc": "Target of the generated span; defaults to the module path.",
+          "snippet": "target = \"${1:target}\""
+        },
+        {
+          "key": "level",
+          "kind": "enum",
+          "doc": "Level of the span (default info). Also accepts Level::DEBUG or a number 1-5.",
+          "values": [
+            "trace",
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
+          "quoted": true,
+          "snippet": "level = \"$1\"",
+          "alt": [
+            {
+              "label": "level = Level::DEBUG",
+              "snippet": "level = Level::${1:DEBUG}",
+              "doc": "A tracing::Level constant."
+            }
+          ]
+        },
+        {
+          "key": "skip",
+          "kind": "flag",
+          "doc": "Leave the named arguments out of the span fields (also those without Debug).",
+          "conflicts": [
+            "skip_all"
+          ],
+          "snippet": "skip(${1:arg})"
+        },
+        {
+          "key": "skip_all",
+          "kind": "flag",
+          "doc": "Leave all arguments out of the span fields.",
+          "conflicts": [
+            "skip"
+          ]
+        },
+        {
+          "key": "fields",
+          "kind": "flag",
+          "doc": "Extra span fields: fields(key = expr, name). A bare name creates an empty field to record later.",
+          "snippet": "fields(${1:key} = ${2:value})"
+        },
+        {
+          "key": "parent",
+          "kind": "expr",
+          "doc": "Parent span: `None` makes a root span, or a span expression such as &self.span.",
+          "snippet": "parent = ${1:None}"
+        },
+        {
+          "key": "follows_from",
+          "kind": "expr",
+          "doc": "Declare follows_from relationships with one or more span ids or spans.",
+          "snippet": "follows_from = ${1:causes}"
+        },
+        {
+          "key": "ret",
+          "kind": "flag",
+          "doc": "Emit an event with the return value (Ok value of a Result).",
+          "alt": [
+            {
+              "label": "ret(Display)",
+              "snippet": "ret(Display)",
+              "doc": "Record the value with Display instead of Debug."
+            },
+            {
+              "label": "ret(level = Level::WARN)",
+              "snippet": "ret(level = Level::${1:WARN})",
+              "doc": "Level of the event (default: the span's)."
+            }
+          ]
+        },
+        {
+          "key": "err",
+          "kind": "flag",
+          "doc": "Emit an error event when the function returns Err (Display by default, level ERROR).",
+          "alt": [
+            {
+              "label": "err(Display)",
+              "snippet": "err(Display)",
+              "doc": "Record the error with Display (the default)."
+            },
+            {
+              "label": "err(Debug)",
+              "snippet": "err(Debug)",
+              "doc": "Record the error with Debug."
+            },
+            {
+              "label": "err(level = Level::INFO)",
+              "snippet": "err(level = Level::${1:INFO})",
+              "doc": "Level of the error event (default ERROR)."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

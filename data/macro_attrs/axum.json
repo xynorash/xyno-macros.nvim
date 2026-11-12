@@ -1,0 +1,77 @@
+{
+  "crate": "axum",
+  "versions": ">=0.6.0, <0.9.0",
+  "docs_url": "https://docs.rs/axum-macros/latest/axum_macros/",
+  "verified": "2026-11-12 against docs.rs, axum-macros 0.5.1 (debug_handler, FromRequest, FromRef)",
+  "attributes": [
+    {
+      "name": "axum::debug_handler",
+      "applies_to": [
+        "fn"
+      ],
+      "docs_url": "https://docs.rs/axum-macros/latest/axum_macros/attr.debug_handler.html",
+      "args": [
+        {
+          "key": "state",
+          "kind": "path",
+          "doc": "State type the handler is checked against; needed with several State arguments or a custom state type (default `()`).",
+          "snippet": "state = ${1:AppState}"
+        }
+      ]
+    },
+    {
+      "name": "from_request",
+      "derives": [
+        "FromRequest"
+      ],
+      "applies_to": [
+        "container",
+        "field"
+      ],
+      "docs_url": "https://docs.rs/axum-macros/latest/axum_macros/derive.FromRequest.html",
+      "args": [
+        {
+          "key": "via",
+          "kind": "flag",
+          "doc": "Extract through this generic newtype extractor, e.g. via(Extension): per field, or the whole type on the container.",
+          "snippet": "via(${1:Extension})"
+        },
+        {
+          "key": "rejection",
+          "kind": "flag",
+          "doc": "Custom rejection type (must implement IntoResponse; each inner rejection must convert into it).",
+          "applies_to": [
+            "container"
+          ],
+          "snippet": "rejection(${1:MyRejection})"
+        },
+        {
+          "key": "state",
+          "kind": "flag",
+          "doc": "Concrete state type, when extraction works only with that state (not needed for State<T> fields).",
+          "applies_to": [
+            "container"
+          ],
+          "snippet": "state(${1:AppState})"
+        }
+      ]
+    },
+    {
+      "name": "from_ref",
+      "derives": [
+        "FromRef"
+      ],
+      "applies_to": [
+        "field"
+      ],
+      "docs_url": "https://docs.rs/axum-macros/latest/axum_macros/derive.FromRef.html",
+      "args": [
+        {
+          "key": "skip",
+          "kind": "flag",
+          "doc": "Leave this field out of the derived FromRef implementations."
+        }
+      ]
+    }
+  ]
+}

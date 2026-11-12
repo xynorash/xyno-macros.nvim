@@ -16,7 +16,7 @@
         "field",
         "variant"
       ],
-      "docs_url": "https://docs.rs/sqlx/latest/sqlx/derive.FromRow.html",
+      "docs_url": "https://docs.rs/sqlx/latest/sqlx/trait.FromRow.html",
       "args": [
         {
           "key": "rename_all",
