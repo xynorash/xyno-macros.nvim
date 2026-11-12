@@ -185,6 +185,12 @@ function M.find_definition(bufnr, row, col, name, cb)
     end
     local home = vim.fs.normalize(vim.uv.os_homedir() or "")
     local short = vim.fs.normalize(fname):gsub("^" .. vim.pesc(home), "~"):gsub("^.*/library/", "")
+    -- a file inside the working directory is shown relative to it (the absolute path of a project under /tmp or
+    -- a deep checkout filled the popup's first line and was cut at the window edge)
+    local rel = vim.fn.fnamemodify(fname, ":.")
+    if rel:sub(1, 1) ~= "/" and rel:sub(1, 1) ~= "~" then
+      short = rel
+    end
     cb(def, ("%s:%d"):format(short, def.row + 1))
   end, bufnr)
 end
