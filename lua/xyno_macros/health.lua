@@ -9,7 +9,12 @@ function M.check()
   else
     h.error("Neovim 0.12 or newer is required")
   end
-  for _, mod in ipairs({ "xyno_rust.crate_meta", "xyno_rust.code_actions", "xyno_rust.fsutil", "xyno_rust.rust_context" }) do
+  for _, mod in ipairs({
+    "xyno_rust.crate_meta",
+    "xyno_rust.code_actions",
+    "xyno_rust.fsutil",
+    "xyno_rust.rust_context",
+  }) do
     if pcall(require, mod) then
       h.ok(mod .. " (xyno-rust.nvim)")
     else
@@ -19,7 +24,10 @@ function M.check()
   if pcall(require, "xyno_imports.engine") then
     h.ok("xyno_imports.engine (xyno-imports.nvim, accepting a derive imports it)")
   else
-    h.warn("xyno-imports.nvim not found: accepting a derive will not import it", { "install xynorash/xyno-imports.nvim" })
+    h.warn(
+      "xyno-imports.nvim not found: accepting a derive will not import it",
+      { "install xynorash/xyno-imports.nvim" }
+    )
   end
   if pcall(vim.treesitter.language.add, "rust") then
     h.ok("tree-sitter parser for rust")
@@ -32,10 +40,18 @@ function M.check()
       return require("blink.cmp.config").sources
     end)
     if ok and cfg and cfg.providers then
-      h.info(("providers registered: macro_attrs=%s macro_tools=%s"):format(tostring(cfg.providers.macro_attrs ~= nil), tostring(cfg.providers.macro_tools ~= nil)))
+      h.info(
+        ("providers registered: macro_attrs=%s macro_tools=%s"):format(
+          tostring(cfg.providers.macro_attrs ~= nil),
+          tostring(cfg.providers.macro_tools ~= nil)
+        )
+      )
     end
   else
-    h.warn("blink.cmp not found: no completion sources (commands still work)", { "see `require('xyno_macros').blink_opts` in the README" })
+    h.warn(
+      "blink.cmp not found: no completion sources (commands still work)",
+      { "see `require('xyno_macros').blink_opts` in the README" }
+    )
   end
   local clients = vim.lsp.get_clients({ name = "rust-analyzer" })
   if #clients > 0 then
@@ -57,14 +73,19 @@ function M.check()
   elseif which == "custom" then
     h.warn("trust: a custom provider decides before cargo expand builds a crate (its answer is not checked here)")
   else
-    h.warn("trust: the installed xyno-rust.nvim has no xyno_rust.trust; the INTERIM check of this plugin is used", { "update xyno-rust.nvim; the interim list is " .. trust.file() })
+    h.warn(
+      "trust: the installed xyno-rust.nvim has no xyno_rust.trust; the INTERIM check of this plugin is used",
+      { "update xyno-rust.nvim; the interim list is " .. trust.file() }
+    )
     local list = trust.list()
     h.info(("interim trust list: %d workspace%s"):format(#list, #list == 1 and "" or "s"))
     for _, e in ipairs(list) do
       h.info("  trusted: " .. e.root)
     end
   end
-  h.info("cargo expand builds the crate (build.rs and proc macros run), so it asks first in a workspace that is not trusted")
+  h.info(
+    "cargo expand builds the crate (build.rs and proc macros run), so it asks first in a workspace that is not trusted"
+  )
 end
 
 return M

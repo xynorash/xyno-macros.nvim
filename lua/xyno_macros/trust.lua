@@ -143,7 +143,10 @@ function M.require(root, what, cb)
   end
   ask(root, what, function(ok)
     if not ok then
-      vim.notify(("xyno-macros: %s not run: %s is not a trusted workspace"):format(what, tostring(root)), vim.log.levels.WARN)
+      vim.notify(
+        ("xyno-macros: %s not run: %s is not a trusted workspace"):format(what, tostring(root)),
+        vim.log.levels.WARN
+      )
     end
     cb(ok)
   end)

@@ -29,7 +29,8 @@ local M = {}
 local cm = require("xyno_rust.crate_meta")
 
 -- the plugin directory (lua/xyno_macros/attrs.lua is three levels below it)
-local plugin_root = vim.fs.dirname(vim.fs.dirname(vim.fs.dirname(vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p"))))
+local plugin_root =
+  vim.fs.dirname(vim.fs.dirname(vim.fs.dirname(vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p"))))
 
 M.config = {
   shipped_glob = plugin_root .. "/data/macro_attrs/*.json",
@@ -157,7 +158,8 @@ end
 
 -- ------------------------------------------------------------------ schemas
 
-local KINDS = { flag = true, string = true, ident = true, path = true, int = true, bool = true, enum = true, expr = true }
+local KINDS =
+  { flag = true, string = true, ident = true, path = true, int = true, bool = true, enum = true, expr = true }
 
 local LIST_FIELDS = { "applies_to", "derives", "conflicts", "requires", "values", "nested", "needs_attr", "alt" }
 
@@ -660,7 +662,14 @@ local function attribute_at(lines, row, col)
       local start = offs[r] + starts[k][2] + 1
       local ctx, st, closed, end_off = lex_attr(text, lines, offs, start, cur, row, false)
       if ctx then
-        local res = { ctx = ctx, text = text, offs = offs, attr_off = offs[r] + starts[k][1] - 1, attr_row = r, attr_col = starts[k][1] - 1 }
+        local res = {
+          ctx = ctx,
+          text = text,
+          offs = offs,
+          attr_off = offs[r] + starts[k][1] - 1,
+          attr_row = r,
+          attr_col = starts[k][1] - 1,
+        }
         if ctx.mode == "path" then
           return res
         end
@@ -692,9 +701,23 @@ end
 -- ------------------------------------------------------------ dependencies
 
 local SKIP_KEYS = {
-  version = true, features = true, optional = true, ["default-features"] = true, default_features = true,
-  path = true, git = true, branch = true, tag = true, rev = true, package = true, workspace = true,
-  registry = true, ["public"] = true, artifact = true, lib = true, target = true,
+  version = true,
+  features = true,
+  optional = true,
+  ["default-features"] = true,
+  default_features = true,
+  path = true,
+  git = true,
+  branch = true,
+  tag = true,
+  rev = true,
+  package = true,
+  workspace = true,
+  registry = true,
+  ["public"] = true,
+  artifact = true,
+  lib = true,
+  target = true,
 }
 
 --- Dependency names of a Cargo.toml text: { { alias, name } ... } (name = package);
@@ -871,7 +894,12 @@ local function proc_macro_derives(dir)
   if is_proc then
     local files, bytes = 0, 0
     for name, kind in vim.fs.dir(dir .. "/src", { depth = 3 }) do
-      if kind == "file" and name:sub(-3) == ".rs" and files < M.config.derive_max_files and bytes < M.config.derive_max_bytes then
+      if
+        kind == "file"
+        and name:sub(-3) == ".rs"
+        and files < M.config.derive_max_files
+        and bytes < M.config.derive_max_bytes
+      then
         local text = read_file(dir .. "/src/" .. name, 400 * 1024)
         if text then
           files, bytes = files + 1, bytes + #text
@@ -953,7 +981,8 @@ function M.derive_catalog(deps)
             for _, der in ipairs(proc_macro_derives(d)) do
               if not names[der.name] then
                 names[der.name] = true
-                list[#list + 1] = { name = der.name, crate = crate, helpers = der.helpers, path = crate .. "::" .. der.name }
+                list[#list + 1] =
+                  { name = der.name, crate = crate, helpers = der.helpers, path = crate .. "::" .. der.name }
               end
             end
           end
@@ -1205,7 +1234,8 @@ local function snippet_for(arg)
 end
 
 local function doc_text(arg, attr, file)
-  local lines = { ("**%s**"):format(arg.key:gsub("%*", "")) .. (arg.doc and arg.doc ~= "" and (" — " .. arg.doc) or "") }
+  local lines =
+    { ("**%s**"):format(arg.key:gsub("%*", "")) .. (arg.doc and arg.doc ~= "" and (" — " .. arg.doc) or "") }
   local meta = {}
   if arg.applies_to then
     meta[#meta + 1] = "applies to: " .. table.concat(arg.applies_to, ", ")
@@ -1330,7 +1360,14 @@ local function schema_items(ctx, target, deps, schemas, uses, path)
           if not ctx.seen[k] and not dedupe["n" .. k] then
             dedupe["n" .. k] = true
             order = order + 1
-            items[#items + 1] = key_item({ key = k, kind = "string", doc = ("Applies to %s only."):format(k) }, attr, file, order, k, k .. ' = "$1"')
+            items[#items + 1] = key_item(
+              { key = k, kind = "string", doc = ("Applies to %s only."):format(k) },
+              attr,
+              file,
+              order,
+              k,
+              k .. ' = "$1"'
+            )
             items[#items].documentation.value = ("**%s(%s = …)** — %s"):format(parent.key, k, parent.doc or "")
           end
         end
@@ -1350,7 +1387,16 @@ local function schema_items(ctx, target, deps, schemas, uses, path)
             end
             items[#items + 1] = key_item(arg, attr, file, order, nil, nil, nil, unmet)
             for n, alt in ipairs(arg.alt or {}) do
-              items[#items + 1] = key_item(arg, attr, file, order + n / 100, alt.label, alt.snippet, alt.doc and ("**%s** — %s"):format(alt.label, alt.doc), unmet)
+              items[#items + 1] = key_item(
+                arg,
+                attr,
+                file,
+                order + n / 100,
+                alt.label,
+                alt.snippet,
+                alt.doc and ("**%s** — %s"):format(alt.label, alt.doc),
+                unmet
+              )
             end
           end
         end
@@ -1382,7 +1428,14 @@ local function schema_items(ctx, target, deps, schemas, uses, path)
               label = value,
               kind = KIND.EnumMember,
               detail = ("%s · %s"):format(file.crate, def.key),
-              documentation = { kind = "markdown", value = ("`%s = %s`%s"):format(def.key, def.quoted and ('"' .. value .. '"') or value, vdoc and ("\n\n" .. vdoc) or "") },
+              documentation = {
+                kind = "markdown",
+                value = ("`%s = %s`%s"):format(
+                  def.key,
+                  def.quoted and ('"' .. value .. '"') or value,
+                  vdoc and ("\n\n" .. vdoc) or ""
+                ),
+              },
               insertText = text,
               insertTextFormat = vim.lsp.protocol.InsertTextFormat.PlainText,
               sortText = ("%04d"):format(i),
@@ -1558,7 +1611,15 @@ local function learn_items(ctx, target, deps, catalog, uses, path, root)
         label = e.key,
         kind = KIND.Property,
         detail = ("%s · seen %d×"):format(crates[1].name, e.ws + e.dep),
-        documentation = { kind = "markdown", value = ("`%s` is used %d× in this workspace and %d× in the sources of `%s` (no schema for this attribute; learned from usage)."):format(e.key, e.ws, e.dep, crates[1].name) },
+        documentation = {
+          kind = "markdown",
+          value = ("`%s` is used %d× in this workspace and %d× in the sources of `%s` (no schema for this attribute; learned from usage)."):format(
+            e.key,
+            e.ws,
+            e.dep,
+            crates[1].name
+          ),
+        },
         insertText = e.key,
         sortText = ("%04d"):format(i),
         data = { macro_attrs = "learned" },
@@ -1577,11 +1638,19 @@ local function derive_items(ctx, target, deps, uses)
     if seen[name] then
       return
     end
-    local doc = ("`#[derive(%s)]`%s"):format(name, builtin and " — standard library derive." or (" — derive macro of `" .. crate .. "`."))
+    local doc = ("`#[derive(%s)]`%s"):format(
+      name,
+      builtin and " — standard library derive." or (" — derive macro of `" .. crate .. "`.")
+    )
     if helpers and #helpers > 0 then
-      doc = doc .. "\n\nHelper attributes: " .. table.concat(vim.tbl_map(function(h)
-        return "`#[" .. h .. "]`"
-      end, helpers), ", ")
+      doc = doc
+        .. "\n\nHelper attributes: "
+        .. table.concat(
+          vim.tbl_map(function(h)
+            return "`#[" .. h .. "]`"
+          end, helpers),
+          ", "
+        )
     end
     items[#items + 1] = {
       label = name,
@@ -1590,7 +1659,13 @@ local function derive_items(ctx, target, deps, uses)
       documentation = { kind = "markdown", value = doc },
       insertText = name,
       sortText = ("%s%04d%s"):format(builtin and "5" or "3", order, name),
-      data = { macro_attrs = "derive", crate = crate, path = path, builtin = builtin or nil, qualified = ctx.qualifier ~= nil or nil },
+      data = {
+        macro_attrs = "derive",
+        crate = crate,
+        path = path,
+        builtin = builtin or nil,
+        qualified = ctx.qualifier ~= nil or nil,
+      },
     }
   end
   if not ctx.qualifier then
@@ -1771,7 +1846,14 @@ M.on_derive_accepted = function(name, info)
           end)
         end
         if #res.candidates > 1 then
-          return vim.notify(("macro_attrs: %d import candidates for %s, none unambiguous (:ImportName %s)"):format(#res.candidates, name, name), vim.log.levels.INFO)
+          return vim.notify(
+            ("macro_attrs: %d import candidates for %s, none unambiguous (:ImportName %s)"):format(
+              #res.candidates,
+              name,
+              name
+            ),
+            vim.log.levels.INFO
+          )
         end
         if attempts < M.config.import_attempts then
           vim.defer_fn(try, M.config.import_interval)
@@ -1803,7 +1885,10 @@ function Source:execute(ctx, item, callback, default_implementation)
           return
         end
         local cur = vim.api.nvim_win_get_cursor(0)
-        M.on_derive_accepted(item.label, { bufnr = bufnr, row = cur[1], col = cur[2], path = data.path, crate = data.crate })
+        M.on_derive_accepted(
+          item.label,
+          { bufnr = bufnr, row = cur[1], col = cur[2], path = data.path, crate = data.crate }
+        )
       end)
       if not ok then
         return
@@ -1826,13 +1911,21 @@ function M.setup(opts)
     local items, info = M.items(0, pos[1], pos[2])
     local ctx = info.ctx or {}
     local lines = {
-      ("attribute: %s  mode: %s  key: %s  prefix: %q"):format(ctx.path or "(none)", ctx.mode or "-", ctx.key or "-", ctx.prefix or ""),
+      ("attribute: %s  mode: %s  key: %s  prefix: %q"):format(
+        ctx.path or "(none)",
+        ctx.mode or "-",
+        ctx.key or "-",
+        ctx.prefix or ""
+      ),
       ("target: %s%s  derives: %s"):format(
         info.target and info.target.kind or "?",
         info.target and info.target.sub and (":" .. info.target.sub) or "",
-        table.concat(vim.tbl_map(function(d)
-          return d.name
-        end, info.target and info.target.derives or {}), ", ")
+        table.concat(
+          vim.tbl_map(function(d)
+            return d.name
+          end, info.target and info.target.derives or {}),
+          ", "
+        )
       ),
       ("dependencies: %s  schema matched: %s  items: %d"):format(info.deps_from or "-", tostring(info.matched), #items),
     }

@@ -16,7 +16,22 @@ describe("shipped schemas", function()
   it("there are at least the fourteen documented crates", function()
     H.ok(#files >= 14, tostring(#files))
     local shipped = require("xyno_macros.attrs").shipped()
-    for _, c in ipairs({ "serde", "clap", "tokio", "thiserror", "sqlx", "derive_more", "strum", "bon", "schemars", "utoipa", "tracing", "diesel", "axum", "bevy" }) do
+    for _, c in ipairs({
+      "serde",
+      "clap",
+      "tokio",
+      "thiserror",
+      "sqlx",
+      "derive_more",
+      "strum",
+      "bon",
+      "schemars",
+      "utoipa",
+      "tracing",
+      "diesel",
+      "axum",
+      "bevy",
+    }) do
       H.ok(shipped[c], c .. " is not shipped")
     end
     H.eq({}, require("xyno_macros.attrs").load_errors)
@@ -55,7 +70,16 @@ describe("validator", function()
       versions = ">=1.0.0, <2.0.0",
       docs_url = "https://docs.rs/demo/",
       verified = "2026-01-01 against demo 1.0.0",
-      attributes = { { name = "demo", applies_to = { "field" }, args = { { key = "a", kind = "flag", doc = "x" }, { key = "b", kind = "flag", doc = "y", conflicts = { "a" } } } } },
+      attributes = {
+        {
+          name = "demo",
+          applies_to = { "field" },
+          args = {
+            { key = "a", kind = "flag", doc = "x" },
+            { key = "b", kind = "flag", doc = "y", conflicts = { "a" } },
+          },
+        },
+      },
     }
   end
   local function errors(mut)
@@ -69,16 +93,76 @@ describe("validator", function()
   end)
 
   it("catches typos, dangling references and bad values", function()
-    H.match(errors(function(d) d.attributes[1].args[1].knd = "flag" end), "unknown field `knd`", true)
-    H.match(errors(function(d) d.attributes[1].args[2].conflicts = { "zz" } end), "not a key of this attribute", true)
-    H.match(errors(function(d) d.attributes[1].args[1].kind = "enum" end), "enum needs `values`", true)
-    H.match(errors(function(d) d.attributes[1].applies_to = { "fields" } end), "unknown target `fields`", true)
-    H.match(errors(function(d) d.attributes[1].args[1].snippet = "a = ${1:x" end), "unbalanced", true)
-    H.match(errors(function(d) d.attributes[1].args[1].since = "one" end), "since must be a version", true)
-    H.match(errors(function(d) d.docs_url = "http://docs.rs/demo" end), "https", true)
-    H.match(errors(function(d) d.versions = "latest" end), "cargo-style range", true)
-    H.match(errors(function(d) d.attributes[1].args[2].key = "a" end), "listed twice", true)
-    H.match(errors(function(d) d.crate = "other" end), "does not match crate", true)
+    H.match(
+      errors(function(d)
+        d.attributes[1].args[1].knd = "flag"
+      end),
+      "unknown field `knd`",
+      true
+    )
+    H.match(
+      errors(function(d)
+        d.attributes[1].args[2].conflicts = { "zz" }
+      end),
+      "not a key of this attribute",
+      true
+    )
+    H.match(
+      errors(function(d)
+        d.attributes[1].args[1].kind = "enum"
+      end),
+      "enum needs `values`",
+      true
+    )
+    H.match(
+      errors(function(d)
+        d.attributes[1].applies_to = { "fields" }
+      end),
+      "unknown target `fields`",
+      true
+    )
+    H.match(
+      errors(function(d)
+        d.attributes[1].args[1].snippet = "a = ${1:x"
+      end),
+      "unbalanced",
+      true
+    )
+    H.match(
+      errors(function(d)
+        d.attributes[1].args[1].since = "one"
+      end),
+      "since must be a version",
+      true
+    )
+    H.match(
+      errors(function(d)
+        d.docs_url = "http://docs.rs/demo"
+      end),
+      "https",
+      true
+    )
+    H.match(
+      errors(function(d)
+        d.versions = "latest"
+      end),
+      "cargo-style range",
+      true
+    )
+    H.match(
+      errors(function(d)
+        d.attributes[1].args[2].key = "a"
+      end),
+      "listed twice",
+      true
+    )
+    H.match(
+      errors(function(d)
+        d.crate = "other"
+      end),
+      "does not match crate",
+      true
+    )
   end)
 
   it("a key written as `not(source)` is conflicted with as `not`", function()
@@ -99,7 +183,10 @@ describe("the added schemas complete in a real buffer", function()
         f:write(t)
         f:close()
       end
-      put(dir .. "/Cargo.toml", '[package]\nname = "added"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\ntracing = "0.1"\ndiesel = "2"\naxum = "0.8"\nbevy = "0.20"\n')
+      put(
+        dir .. "/Cargo.toml",
+        '[package]\nname = "added"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\ntracing = "0.1"\ndiesel = "2"\naxum = "0.8"\nbevy = "0.20"\n'
+      )
       put(dir .. "/src/main.rs", "fn main() {}\n")
     end
     local lines = vim.split(src, "\n", { plain = true })

@@ -6,7 +6,6 @@ M.config = {
   snippets_allowed = nil, -- optional function(ctx) -> boolean, see M.snippets_allowed
 }
 
-
 -- ================================================================== snippets
 -- A blink.cmp source (provider "macro_tools") for macro arms that rust-analyzer
 -- does not complete: tokio::select!, matches!, vec![x; n].
@@ -136,7 +135,10 @@ function Source:get_completions(ctx, callback)
       insertTextFormat = vim.lsp.protocol.InsertTextFormat.Snippet,
       insertText = s.text,
       detail = s.detail,
-      documentation = { kind = "markdown", value = "```rust\n" .. s.text:gsub("%${%d:([^}]*)}", "%1"):gsub("%${0}", "") .. "\n```" },
+      documentation = {
+        kind = "markdown",
+        value = "```rust\n" .. s.text:gsub("%${%d:([^}]*)}", "%1"):gsub("%${0}", "") .. "\n```",
+      },
     }
   end
   callback({ items = items, is_incomplete_forward = false, is_incomplete_backward = false })

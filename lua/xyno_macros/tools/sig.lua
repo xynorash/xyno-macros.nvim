@@ -258,7 +258,14 @@ local function extra_lines(ctx, toks)
   local call = { name = ctx.name, path = ctx.path, group = g }
   local fi = Format.format_info(call)
   if fi then
-    return { ("format: %d placeholder%s, %d argument%s given"):format(fi.needs, fi.needs == 1 and "" or "s", fi.given, fi.given == 1 and "" or "s") }
+    return {
+      ("format: %d placeholder%s, %d argument%s given"):format(
+        fi.needs,
+        fi.needs == 1 and "" or "s",
+        fi.given,
+        fi.given == 1 and "" or "s"
+      ),
+    }
   end
 end
 

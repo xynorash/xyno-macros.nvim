@@ -2,7 +2,6 @@
 -- Part of xyno_macros.tools (the facade merges every part into one table).
 local M = {}
 
-
 -- ===================================================================== lexer
 -- A Rust token lexer that is only as exact as macro help needs: strings (raw,
 -- byte, c), chars vs lifetimes, comments, numbers, groups. Groups nest; a
@@ -14,7 +13,28 @@ local M = {}
 
 local PUNCT3 = { ["..="] = true, ["..."] = true, ["<<="] = true, [">>="] = true }
 local PUNCT2 = {}
-for _, p in ipairs({ "=>", "::", "->", "..", "==", "!=", "<=", ">=", "&&", "||", "+=", "-=", "*=", "/=", "%=", "^=", "&=", "|=", "<<", ">>" }) do
+for _, p in ipairs({
+  "=>",
+  "::",
+  "->",
+  "..",
+  "==",
+  "!=",
+  "<=",
+  ">=",
+  "&&",
+  "||",
+  "+=",
+  "-=",
+  "*=",
+  "/=",
+  "%=",
+  "^=",
+  "&=",
+  "|=",
+  "<<",
+  ">>",
+}) do
   PUNCT2[p] = true
 end
 local CLOSER = { ["("] = ")", ["["] = "]", ["{"] = "}" }

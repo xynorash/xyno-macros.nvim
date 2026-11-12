@@ -30,7 +30,13 @@ M.requires_rust_api = "1.1"
 local function rust_api_ok(name)
   local ok, rust = pcall(require, "xyno_rust")
   if not ok or type(rust.compatible) ~= "function" then
-    vim.notify(name .. ": the installed xyno-rust.nvim is too old to say which API it has (needs API " .. M.requires_rust_api .. "): update xyno-rust.nvim", vim.log.levels.ERROR)
+    vim.notify(
+      name
+        .. ": the installed xyno-rust.nvim is too old to say which API it has (needs API "
+        .. M.requires_rust_api
+        .. "): update xyno-rust.nvim",
+      vim.log.levels.ERROR
+    )
     return false
   end
   local good, why = rust.compatible(M.requires_rust_api)
@@ -61,7 +67,7 @@ function M.setup(opts)
   if opts.trust == "auto" or opts.trust == "local" or type(opts.trust) == "function" then
     require("xyno_macros.trust").config.provider = opts.trust
   else
-    vim.notify("xyno-macros: option trust must be \"auto\", \"local\" or a function; using \"auto\"", vim.log.levels.WARN)
+    vim.notify('xyno-macros: option trust must be "auto", "local" or a function; using "auto"', vim.log.levels.WARN)
     require("xyno_macros.trust").config.provider = "auto"
   end
   local problems = {}

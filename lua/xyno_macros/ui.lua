@@ -36,11 +36,12 @@ function M.validate_popup(p)
       end
     elseif k == "border" then
       if not (type(v) == "string" and BORDERS[v]) then
-        problems[#problems + 1] = "popup.border must be one of rounded, single, double, solid, none, shadow, got " .. vim.inspect(v)
+        problems[#problems + 1] = "popup.border must be one of rounded, single, double, solid, none, shadow, got "
+          .. vim.inspect(v)
       end
     elseif k == "prefer" then
       if v ~= "below" and v ~= "above" then
-        problems[#problems + 1] = "popup.prefer must be \"below\" or \"above\", got " .. vim.inspect(v)
+        problems[#problems + 1] = 'popup.prefer must be "below" or "above", got ' .. vim.inspect(v)
       end
     else
       problems[#problems + 1] = ("unknown popup option `%s`"):format(tostring(k))

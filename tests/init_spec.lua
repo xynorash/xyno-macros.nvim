@@ -44,7 +44,8 @@ describe("setup", function()
       M.setup(opts)
       vim.api.nvim_exec_autocmds("LspAttach", { buffer = buf, data = { client_id = 1 } })
       H.wait_for(function()
-        return vim.fn.maparg("<leader>rx", "n", false, true).buffer == 1 or vim.fn.maparg("<C-s>", "i", false, true).buffer == 1
+        return vim.fn.maparg("<leader>rx", "n", false, true).buffer == 1
+          or vim.fn.maparg("<C-s>", "i", false, true).buffer == 1
       end, 3000, "the buffer-local key")
     end
     local ok, err = pcall(function()
@@ -72,9 +73,11 @@ describe("setup", function()
     local buf = vim.api.nvim_create_buf(true, false)
     vim.api.nvim_set_current_buf(buf)
     H.eq(false, mt.snippets_allowed({ line = "    x.sel", cursor = { 1, 9 }, bufnr = buf }))
-    M.setup({ snippets_allowed = function()
-      return false
-    end })
+    M.setup({
+      snippets_allowed = function()
+        return false
+      end,
+    })
     H.eq(false, mt.snippets_allowed({ line = "    sel", cursor = { 1, 7 }, bufnr = buf }))
   end)
 
@@ -149,9 +152,18 @@ describe("popup layout, highlight groups and validated options", function()
   end)
 
   it("bad popup and attrs options give one warning and change nothing", function()
-    local notes = setup_capture({ popup = { max_height = 0, border = "dotted", extra = 1 }, attrs = { context_lines = "many", nope = 1, window_min = 2000 } })
+    local notes = setup_capture({
+      popup = { max_height = 0, border = "dotted", extra = 1 },
+      attrs = { context_lines = "many", nope = 1, window_min = 2000 },
+    })
     H.eq(1, #notes)
-    for _, frag in ipairs({ "popup.max_height", "popup.border", "unknown popup option `extra`", "attrs.context_lines must be a number", "unknown attrs option `nope`" }) do
+    for _, frag in ipairs({
+      "popup.max_height",
+      "popup.border",
+      "unknown popup option `extra`",
+      "attrs.context_lines must be a number",
+      "unknown attrs option `nope`",
+    }) do
       H.match(notes[1].msg, frag, true)
     end
     H.eq(14, ui.popup.max_height)

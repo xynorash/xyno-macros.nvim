@@ -25,7 +25,7 @@ local function setup_crate()
   vim.env.XDG_STATE_HOME = base .. "/state"
   local dir = base .. "/crate"
   vim.fn.mkdir(dir .. "/src", "p")
-  vim.fn.writefile({ '[package]', 'name = "tmpc"', 'version = "0.1.0"', 'edition = "2021"' }, dir .. "/Cargo.toml")
+  vim.fn.writefile({ "[package]", 'name = "tmpc"', 'version = "0.1.0"', 'edition = "2021"' }, dir .. "/Cargo.toml")
   vim.fn.writefile({ "pub fn f() {}" }, dir .. "/src/lib.rs")
   local bin = base .. "/bin"
   vim.fn.mkdir(bin, "p")
@@ -127,9 +127,22 @@ describe("cargo expand trust gate (interim check)", function()
     local _, dir = setup_crate()
     trust.trust(dir)
     H.ok(vim.uv.fs_stat(trust.file()))
-    local r = vim.system({ vim.v.progpath, "--headless", "-u", "NONE", "-i", "NONE", "--cmd", "set rtp+=" .. H.repo, "-c",
-      "lua io.stdout:write(tostring(require('xyno_macros.trust').is_trusted(" .. vim.inspect(dir) .. ")))", "-c", "qa!" },
-      { text = true, env = { XDG_STATE_HOME = vim.env.XDG_STATE_HOME } }):wait(20000)
+    local r = vim
+      .system({
+        vim.v.progpath,
+        "--headless",
+        "-u",
+        "NONE",
+        "-i",
+        "NONE",
+        "--cmd",
+        "set rtp+=" .. H.repo,
+        "-c",
+        "lua io.stdout:write(tostring(require('xyno_macros.trust').is_trusted(" .. vim.inspect(dir) .. ")))",
+        "-c",
+        "qa!",
+      }, { text = true, env = { XDG_STATE_HOME = vim.env.XDG_STATE_HOME } })
+      :wait(20000)
     H.match(r.stdout, "true", true)
   end)
 end)
@@ -220,8 +233,11 @@ describe("health", function()
     local ok, err = pcall(require("xyno_macros.health").check)
     vim.health = orig
     H.ok(ok, err)
-    H.ok(vim.iter(lines):any(function(l)
-      return l:find("trust", 1, true)
-    end), "mentions trust")
+    H.ok(
+      vim.iter(lines):any(function(l)
+        return l:find("trust", 1, true)
+      end),
+      "mentions trust"
+    )
   end)
 end)

@@ -110,9 +110,26 @@ local function is_literal_tok(t)
 end
 
 -- run-length fragments: the tokens one may contain, per fragment kind
-local TYPE_PUNCT = { ["::"] = true, ["<"] = true, [">"] = true, [">>"] = true, ["&"] = true, ["*"] = true, ["!"] = true, [","] = true, ["->"] = true, ["?"] = true, ["+"] = true, ["="] = true, ["dyn"] = true }
+local TYPE_PUNCT = {
+  ["::"] = true,
+  ["<"] = true,
+  [">"] = true,
+  [">>"] = true,
+  ["&"] = true,
+  ["*"] = true,
+  ["!"] = true,
+  [","] = true,
+  ["->"] = true,
+  ["?"] = true,
+  ["+"] = true,
+  ["="] = true,
+  ["dyn"] = true,
+}
 local function run_ok(spec, t, depth)
-  if (spec == "ty" or spec == "path") and (t.t == "str" or (t.t == "group" and t.d == "{") or (t.t == "p" and not TYPE_PUNCT[t.s])) then
+  if
+    (spec == "ty" or spec == "path")
+    and (t.t == "str" or (t.t == "group" and t.d == "{") or (t.t == "p" and not TYPE_PUNCT[t.s]))
+  then
     return false
   end
   if t.t == "p" then
@@ -301,7 +318,8 @@ end
 
 local function def_of_node(node, src)
   local name_node = node:field("name")[1]
-  local def = { name = name_node and vim.treesitter.get_node_text(name_node, src) or "?", arms = {}, row = node:range() }
+  local def =
+    { name = name_node and vim.treesitter.get_node_text(name_node, src) or "?", arms = {}, row = node:range() }
   for child in node:iter_children() do
     if child:type() == "macro_rule" then
       local left = child:field("left")[1]

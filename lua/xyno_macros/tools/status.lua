@@ -23,7 +23,12 @@ function M.macro_diagnostics(diags)
   for _, d in ipairs(diags) do
     local code = d.code ~= nil and tostring(d.code) or ""
     local msg = (d.message or ""):lower()
-    if MACRO_CODES[code] or msg:find("proc.macro") or msg:find("macro expansion") or msg:find("not expanded", 1, true) then
+    if
+      MACRO_CODES[code]
+      or msg:find("proc.macro")
+      or msg:find("macro expansion")
+      or msg:find("not expanded", 1, true)
+    then
       out[#out + 1] = d
     end
   end
@@ -77,7 +82,9 @@ function M.proc_macro_crates(meta, target_dir)
   local out = {}
   for _, p in ipairs(meta.packages) do
     local toml = p.dir and cm.read_manifest(p.dir)
-    if toml and (toml:match("%[lib%].-\nproc[-_]macro%s*=%s*true") or toml:match("%[lib%]\nproc[-_]macro%s*=%s*true")) then
+    if
+      toml and (toml:match("%[lib%].-\nproc[-_]macro%s*=%s*true") or toml:match("%[lib%]\nproc[-_]macro%s*=%s*true"))
+    then
       out[#out + 1] = {
         name = p.name,
         version = p.version,
@@ -161,7 +168,10 @@ function M.report_lines(data)
     local ign = data.ignored and data.ignored[c.name]
     local state = ign and "ignored" or (c.built and "built" or "NOT BUILT")
     local note = problems[c.name] and ("  " .. problems[c.name] .. " problem(s)") or ""
-    add(("  %-28s %-9s %s%s%s"):format(c.name, c.version or "", state, c.member and "  (workspace)" or "", note), { kind = "crate", name = c.name })
+    add(
+      ("  %-28s %-9s %s%s%s"):format(c.name, c.version or "", state, c.member and "  (workspace)" or "", note),
+      { kind = "crate", name = c.name }
+    )
   end
   add("")
   add("Macros not expanded (" .. #data.diags .. " in open buffers)")
@@ -169,8 +179,12 @@ function M.report_lines(data)
     add("  none")
   end
   for _, d in ipairs(data.diags) do
-    local file = vim.fn.fnamemodify(vim.api.nvim_buf_is_valid(d.bufnr) and vim.api.nvim_buf_get_name(d.bufnr) or "?", ":t")
-    add(("  %s:%d  [%s] %s"):format(file, d.lnum + 1, tostring(d.code or "?"), (d.message or ""):gsub("\n.*", "")), { kind = "diag", diag = d })
+    local file =
+      vim.fn.fnamemodify(vim.api.nvim_buf_is_valid(d.bufnr) and vim.api.nvim_buf_get_name(d.bufnr) or "?", ":t")
+    add(
+      ("  %s:%d  [%s] %s"):format(file, d.lnum + 1, tostring(d.code or "?"), (d.message or ""):gsub("\n.*", "")),
+      { kind = "diag", diag = d }
+    )
   end
   add("")
   add("r rebuild proc macros   i ignore a slow proc macro   <CR> jump / ignore   R refresh   q close")
@@ -194,7 +208,7 @@ function M.toml_ignore(text, crate, names)
   local lines = vim.split(text, "\n", { plain = true })
   local header, header_i, key_i, key_j, last_i
   for i, l in ipairs(lines) do
-    local h = l:match("^%s*%[%s*([%w_.%s\"-]-)%s*%]%s*$") or l:match("^%s*%[%s*([%w_.%s\"-]-)%s*%]%s*#.*$")
+    local h = l:match('^%s*%[%s*([%w_.%s"-]-)%s*%]%s*$') or l:match('^%s*%[%s*([%w_.%s"-]-)%s*%]%s*#.*$')
     if h then
       header = h:gsub("%s", "")
       if header == "procMacro.ignored" then
@@ -224,7 +238,8 @@ function M.toml_ignore(text, crate, names)
         last_i = i
       end
     elseif l:match("^%s*procMacro%.ignored") or (header == "procMacro" and l:match("^%s*ignored%s*=")) then
-      return nil, "rust-analyzer.toml sets procMacro.ignored in a form that is not edited automatically: add the crate by hand"
+      return nil,
+        "rust-analyzer.toml sets procMacro.ignored in a form that is not edited automatically: add the crate by hand"
     end
   end
   if key_i then
@@ -248,7 +263,7 @@ function M.toml_ignore(text, crate, names)
   -- cheap sanity check in place of a TOML parser: the table must still be declared once
   local heads = 0
   for _, l in ipairs(lines) do
-    local h = l:match("^%s*%[%s*([%w_.%s\"-]-)%s*%]")
+    local h = l:match('^%s*%[%s*([%w_.%s"-]-)%s*%]')
     if h and h:gsub("%s", "") == "procMacro.ignored" then
       heads = heads + 1
     end
@@ -313,7 +328,7 @@ local function ignored_of(root)
     if fh then
       local header
       for l in fh:lines() do
-        local h = l:match("^%s*%[%s*([%w_.%s\"-]-)%s*%]%s*$") or l:match("^%s*%[%s*([%w_.%s\"-]-)%s*%]%s*#.*$")
+        local h = l:match('^%s*%[%s*([%w_.%s"-]-)%s*%]%s*$') or l:match('^%s*%[%s*([%w_.%s"-]-)%s*%]%s*#.*$')
         if h then
           header = h:gsub("%s", "")
         elseif header == "procMacro.ignored" then
@@ -462,20 +477,29 @@ function M.proc_macro_status(opts)
       data.server = "no rust-analyzer client attached to " .. (file ~= "" and vim.fs.basename(file) or "this buffer")
       return finish()
     end
-    client:request("rust-analyzer/analyzerStatus", { textDocument = { uri = vim.uri_from_bufnr(src) } }, function(e, text)
-      if not e and type(text) == "string" then
-        data.status = M.parse_analyzer_status(text)
-        local pmc = vim.tbl_filter(function(c)
-          return c.proc_macro
-        end, data.status.crates)
-        -- a count of 0 would contradict the list below when the status text has no crate graph
-        data.server = #pmc == 0 and ("rust-analyzer " .. client.name)
-          or ("rust-analyzer %s; %d proc-macro crate%s in this file's crates"):format(client.name, #pmc, #pmc == 1 and "" or "s")
-      else
-        data.server = "analyzerStatus failed: " .. tostring(e and e.message)
-      end
-      finish()
-    end, src)
+    client:request(
+      "rust-analyzer/analyzerStatus",
+      { textDocument = { uri = vim.uri_from_bufnr(src) } },
+      function(e, text)
+        if not e and type(text) == "string" then
+          data.status = M.parse_analyzer_status(text)
+          local pmc = vim.tbl_filter(function(c)
+            return c.proc_macro
+          end, data.status.crates)
+          -- a count of 0 would contradict the list below when the status text has no crate graph
+          data.server = #pmc == 0 and ("rust-analyzer " .. client.name)
+            or ("rust-analyzer %s; %d proc-macro crate%s in this file's crates"):format(
+              client.name,
+              #pmc,
+              #pmc == 1 and "" or "s"
+            )
+        else
+          data.server = "analyzerStatus failed: " .. tostring(e and e.message)
+        end
+        finish()
+      end,
+      src
+    )
   end)
 end
 

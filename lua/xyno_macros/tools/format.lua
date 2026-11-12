@@ -70,17 +70,35 @@ end
 
 -- macro -> index of the format string among its top-level arguments
 local FORMAT_AT = {
-  println = 0, print = 0, eprintln = 0, eprint = 0, format = 0, format_args = 0, panic = 0,
-  unreachable = 0, todo = 0, unimplemented = 0,
-  write = 1, writeln = 1, assert = 1, debug_assert = 1,
-  assert_eq = 2, assert_ne = 2, debug_assert_eq = 2, debug_assert_ne = 2,
+  println = 0,
+  print = 0,
+  eprintln = 0,
+  eprint = 0,
+  format = 0,
+  format_args = 0,
+  panic = 0,
+  unreachable = 0,
+  todo = 0,
+  unimplemented = 0,
+  write = 1,
+  writeln = 1,
+  assert = 1,
+  debug_assert = 1,
+  assert_eq = 2,
+  assert_ne = 2,
+  debug_assert_eq = 2,
+  debug_assert_ne = 2,
 }
 -- tracing/log: fields first, the message is the first argument that is only a
 -- string literal
 local TRACING = { trace = true, debug = true, info = true, warn = true, error = true }
 local SQLX_AT = {
-  query = 0, query_unchecked = 0, query_scalar = 0, query_scalar_unchecked = 0,
-  query_as = 1, query_as_unchecked = 1,
+  query = 0,
+  query_unchecked = 0,
+  query_scalar = 0,
+  query_scalar_unchecked = 0,
+  query_as = 1,
+  query_as_unchecked = 1,
 }
 
 --- Where the format string of `call` is among its arguments (0-based index),
@@ -192,7 +210,12 @@ local function call_hints(call)
           kind = "sql",
           needs = binds,
           given = given,
-          message = ("SQL binds %d parameter%s, %d argument%s given"):format(binds, binds == 1 and "" or "s", given, given == 1 and "" or "s"),
+          message = ("SQL binds %d parameter%s, %d argument%s given"):format(
+            binds,
+            binds == 1 and "" or "s",
+            given,
+            given == 1 and "" or "s"
+          ),
         })
       end
     end

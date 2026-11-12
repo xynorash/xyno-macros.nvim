@@ -20,22 +20,61 @@ vim.opt.rtp:append(rust)
 
 local S = {}
 
-local KINDS = { flag = true, string = true, ident = true, path = true, int = true, bool = true, enum = true, expr = true }
+local KINDS =
+  { flag = true, string = true, ident = true, path = true, int = true, bool = true, enum = true, expr = true }
 local TARGETS = {
-  container = true, ["container:struct"] = true, ["container:enum"] = true, field = true, variant = true, fn = true, param = true,
+  container = true,
+  ["container:struct"] = true,
+  ["container:enum"] = true,
+  field = true,
+  variant = true,
+  fn = true,
+  param = true,
 }
 local FILE_FIELDS = { crate = true, versions = true, docs_url = true, attributes = true, verified = true }
-local ATTR_FIELDS = { name = true, derives = true, applies_to = true, needs_attr = true, docs_url = true, doc = true, args = true }
+local ATTR_FIELDS =
+  { name = true, derives = true, applies_to = true, needs_attr = true, docs_url = true, doc = true, args = true }
 local ARG_FIELDS = {
-  key = true, kind = true, doc = true, applies_to = true, derives = true, values = true, quoted = true, conflicts = true,
-  requires = true, repeatable = true, since = true, nested = true, positional = true, doc_url = true, snippet = true, alt = true,
+  key = true,
+  kind = true,
+  doc = true,
+  applies_to = true,
+  derives = true,
+  values = true,
+  quoted = true,
+  conflicts = true,
+  requires = true,
+  repeatable = true,
+  since = true,
+  nested = true,
+  positional = true,
+  doc_url = true,
+  snippet = true,
+  alt = true,
 }
 local ALT_FIELDS = { label = true, snippet = true, doc = true }
 
 local ORDER = {
   file = { "crate", "versions", "docs_url", "verified", "attributes" },
   attr = { "name", "derives", "applies_to", "needs_attr", "docs_url", "doc", "args" },
-  arg = { "key", "kind", "doc", "applies_to", "derives", "values", "quoted", "conflicts", "requires", "repeatable", "since", "nested", "positional", "doc_url", "snippet", "alt" },
+  arg = {
+    "key",
+    "kind",
+    "doc",
+    "applies_to",
+    "derives",
+    "values",
+    "quoted",
+    "conflicts",
+    "requires",
+    "repeatable",
+    "since",
+    "nested",
+    "positional",
+    "doc_url",
+    "snippet",
+    "alt",
+  },
   value = { "value", "doc" },
   alt = { "label", "snippet", "doc" },
 }
@@ -106,7 +145,7 @@ function S.validate(data, source)
     end
   end
   if type(data.versions) ~= "string" or not check_range(data.versions) then
-    bad("versions", "must be a cargo-style range such as \">=1.0.0, <2.0.0\"")
+    bad("versions", 'must be a cargo-style range such as ">=1.0.0, <2.0.0"')
   end
   if not https(data.docs_url) then
     bad("docs_url", "must be an https link")
@@ -229,12 +268,20 @@ function S.validate(data, source)
                   bad(gp, "alt: unknown field `" .. tostring(k) .. "`")
                 end
               end
-              if type(alt) ~= "table" or type(alt.label) ~= "string" or (alt.snippet ~= nil and not snippet_ok(alt.snippet)) then
+              if
+                type(alt) ~= "table"
+                or type(alt.label) ~= "string"
+                or (alt.snippet ~= nil and not snippet_ok(alt.snippet))
+              then
                 bad(gp, "alt entries need a label and a well-formed snippet")
               end
             end
             -- the same key twice is fine for different targets or derives, a plain duplicate is not
-            local sig = arg.key .. "|" .. table.concat(arg.applies_to or {}, ",") .. "|" .. table.concat(arg.derives or {}, ",")
+            local sig = arg.key
+              .. "|"
+              .. table.concat(arg.applies_to or {}, ",")
+              .. "|"
+              .. table.concat(arg.derives or {}, ",")
             if seen[sig] then
               bad(gp, "listed twice for the same targets and derives")
             end
@@ -323,12 +370,37 @@ end
 -- ------------------------------------------------------------------ drift
 
 local function curl(url)
-  local r = vim.system({ "curl", "-sS", "-L", "--max-time", "20", "-A", "xyno-macros-schema-check", "-o", "/dev/null", "-w", "%{http_code}", url }, { text = true }):wait(30000)
+  local r = vim
+    .system({
+      "curl",
+      "-sS",
+      "-L",
+      "--max-time",
+      "20",
+      "-A",
+      "xyno-macros-schema-check",
+      "-o",
+      "/dev/null",
+      "-w",
+      "%{http_code}",
+      url,
+    }, { text = true })
+    :wait(30000)
   return r.stdout
 end
 
 local function newest(crate)
-  local r = vim.system({ "curl", "-sS", "--max-time", "20", "-A", "xyno-macros-schema-check", "https://crates.io/api/v1/crates/" .. crate }, { text = true }):wait(30000)
+  local r = vim
+    .system({
+      "curl",
+      "-sS",
+      "--max-time",
+      "20",
+      "-A",
+      "xyno-macros-schema-check",
+      "https://crates.io/api/v1/crates/" .. crate,
+    }, { text = true })
+    :wait(30000)
   local ok, d = pcall(vim.json.decode, r.stdout or "")
   return ok and type(d) == "table" and d.crate and d.crate.max_stable_version or nil
 end
@@ -383,10 +455,23 @@ local function run(argv)
         if not latest then
           io.stdout:write(("%s: crates.io did not answer\n"):format(data.crate))
         elseif not am.satisfies(latest, data.versions) then
-          io.stdout:write(("DRIFT %s: newest release %s is outside `%s`; re-read the docs\n"):format(data.crate, latest, data.versions))
+          io.stdout:write(
+            ("DRIFT %s: newest release %s is outside `%s`; re-read the docs\n"):format(
+              data.crate,
+              latest,
+              data.versions
+            )
+          )
           rc = 1
         else
-          io.stdout:write(("ok    %s: newest release %s inside `%s` (%s)\n"):format(data.crate, latest, data.versions, data.verified or "not verified"))
+          io.stdout:write(
+            ("ok    %s: newest release %s inside `%s` (%s)\n"):format(
+              data.crate,
+              latest,
+              data.versions,
+              data.verified or "not verified"
+            )
+          )
         end
         local _ = cm
         local urls = { data.docs_url }
@@ -413,7 +498,13 @@ local function run(argv)
       versions = ">=1.0.0, <2.0.0",
       docs_url = "https://docs.rs/" .. argv[2] .. "/latest/" .. argv[2]:gsub("-", "_") .. "/",
       verified = os.date("%Y-%m-%d") .. " against " .. argv[2] .. " X.Y.Z",
-      attributes = { { name = "attr", applies_to = { "container" }, args = { { key = "key", kind = "flag", doc = "What it does." } } } },
+      attributes = {
+        {
+          name = "attr",
+          applies_to = { "container" },
+          args = { { key = "key", kind = "flag", doc = "What it does." } },
+        },
+      },
     }))
     return 0
   end

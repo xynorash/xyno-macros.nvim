@@ -70,7 +70,7 @@ describe("lexer", function()
   end
 
   it("marks a group that is not closed yet and keeps its tokens", function()
-    local toks = mt.lex('vec![1, (2,')
+    local toks = mt.lex("vec![1, (2,")
     H.eq(3, #toks)
     local g = toks[3]
     H.ok(g.open)
@@ -150,7 +150,7 @@ describe("format and sqlx hints", function()
     { 'writeln!(f, "{}", a)', {} },
     { 'assert!(x > 0, "bad {}")', { { "missing", 1, 0 } } },
     { 'assert_eq!(a, b, "{} {}", c)', { { "missing", 2, 1 } } },
-    { 'assert_eq!(a, b)', {} },
+    { "assert_eq!(a, b)", {} },
     { 'panic!("oops {}")', { { "missing", 1, 0 } } },
     { 'format!("{:.*}", 3)', { { "missing", 2, 1 } } },
     { 'info!(user = 1, "hello {}")', { { "missing", 1, 0 } } },
@@ -248,9 +248,12 @@ describe("macro_rules parsing", function()
     H.ok(def)
     H.eq("vec", def.name)
     H.eq(3, #def.arms)
-    H.eq({ "", "$elem:expr; $n:expr", "$($x:expr),+ $(,)?" }, vim.tbl_map(function(a)
-      return a.matcher
-    end, def.arms))
+    H.eq(
+      { "", "$elem:expr; $n:expr", "$($x:expr),+ $(,)?" },
+      vim.tbl_map(function(a)
+        return a.matcher
+      end, def.arms)
+    )
     H.eq("(", def.arms[1].delim)
   end)
 
@@ -328,7 +331,7 @@ describe("call context", function()
     { "let v = vec![", "vec", true, true, 0 },
     { "let v = vec![1, 2", "vec", true, true, 3 },
     { "let v = vec![foo(1, ", "vec", false, true, 2 },
-    { "fn f() { println!(\"a {}\", bar(", "println", false, true, 4 },
+    { 'fn f() { println!("a {}", bar(', "println", false, true, 4 },
     { "x = tokio::select! {", "select", true, true, 0 },
     { "let a = 1;", nil },
     { "let s = vec![1];\nlet t = foo(", nil },
@@ -376,7 +379,22 @@ describe("popup text", function()
   end)
 
   it("every fragment kind has an explanation", function()
-    for _, k in ipairs({ "expr", "ty", "ident", "path", "pat", "pat_param", "stmt", "block", "item", "meta", "tt", "lifetime", "literal", "vis" }) do
+    for _, k in ipairs({
+      "expr",
+      "ty",
+      "ident",
+      "path",
+      "pat",
+      "pat_param",
+      "stmt",
+      "block",
+      "item",
+      "meta",
+      "tt",
+      "lifetime",
+      "literal",
+      "vis",
+    }) do
       H.ok(mt.fragment_doc[k], k)
     end
   end)
@@ -418,9 +436,10 @@ describe("blink source", function()
     scratch({ "fn f() {", "    x.sel", "}" })
     vim.api.nvim_win_set_cursor(0, { 2, 9 })
     local items
-    mt.new({}):get_completions({ line = "    x.sel", cursor = { 2, 9 }, bufnr = vim.api.nvim_get_current_buf() }, function(r)
-      items = r.items
-    end)
+    mt.new({})
+      :get_completions({ line = "    x.sel", cursor = { 2, 9 }, bufnr = vim.api.nvim_get_current_buf() }, function(r)
+        items = r.items
+      end)
     H.eq(0, #items)
   end)
 
@@ -470,7 +489,7 @@ fn main() {}
   end)
 
   it("finds the call under a position and the same call in the source", function()
-    local src = 'fn a() {\n    one!(1);\n    foo!(vec![1,  2]);\n}\nfn b() {\n    foo!(vec![1, 2]);\n}'
+    local src = "fn a() {\n    one!(1);\n    foo!(vec![1,  2]);\n}\nfn b() {\n    foo!(vec![1, 2]);\n}"
     local call = mt.call_at(src, 2, 12)
     H.eq("vec", call.name, "the inner call wins")
     local same = mt.find_same_call(src, call.key, 5)
@@ -529,7 +548,10 @@ Configuration:
   it("tells which diagnostics are about macros that were not expanded", function()
     local list = {
       { code = "macro-error", message = "proc-macro expansion failed" },
-      { code = "proc-macro-disabled", message = "proc macro `tokio::main` not expanded: proc macro attributes are disabled" },
+      {
+        code = "proc-macro-disabled",
+        message = "proc macro `tokio::main` not expanded: proc macro attributes are disabled",
+      },
       { code = "E0308", message = "mismatched types" },
       { code = "unresolved-proc-macro", message = "proc macro `Serialize` not expanded" },
       { code = nil, message = "this macro expansion is too deep" },
@@ -563,7 +585,13 @@ pub fn select(input: TokenStream) -> TokenStream { input }
       ignored = { slow_macro = { "*" } },
       status = { enabled = "false" },
       diags = {
-        { bufnr = buf, lnum = 4, col = 0, code = "unresolved-proc-macro", message = "proc macro `serde_derive` not expanded" },
+        {
+          bufnr = buf,
+          lnum = 4,
+          col = 0,
+          code = "unresolved-proc-macro",
+          message = "proc macro `serde_derive` not expanded",
+        },
       },
     })
     local text = table.concat(lines, "\n")
@@ -747,7 +775,10 @@ end
 
 describe("live rust-analyzer", function()
   it("expands println!, a derive and #[tokio::main]", function()
-    H.known_issue({ "windows", "macos" }, "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)")
+    H.known_issue(
+      { "windows", "macos" },
+      "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)"
+    )
     local _, buf = open_lab()
     local row, col = find(buf, 'println!("{} {:?}"')
     local name, text = expand_when_ready(buf, row, col + 2)
@@ -766,7 +797,10 @@ describe("live rust-analyzer", function()
   end)
 
   it(":MacroExpand opens a read-only rust split with the line count", function()
-    H.known_issue({ "windows", "macos" }, "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)")
+    H.known_issue(
+      { "windows", "macos" },
+      "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)"
+    )
     local _, buf = open_lab()
     local row, col = find(buf, "pair!(1, 2)")
     expand_when_ready(buf, row, col + 1)
@@ -788,7 +822,10 @@ describe("live rust-analyzer", function()
   end)
 
   it("steps into a nested call and back, with a breadcrumb", function()
-    H.known_issue({ "windows", "macos" }, "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)")
+    H.known_issue(
+      { "windows", "macos" },
+      "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)"
+    )
     local _, buf = open_lab()
     local row, col = find(buf, 'println!("{} {:?}"')
     expand_when_ready(buf, row, col + 2)
@@ -818,7 +855,10 @@ describe("live rust-analyzer", function()
   end)
 
   it("a derive: lists the generated items and jumps to the cursor symbol", function()
-    H.known_issue({ "windows", "macos" }, "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)")
+    H.known_issue(
+      { "windows", "macos" },
+      "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)"
+    )
     local _, buf = open_lab()
     local drow, dcol = find(buf, "Serialize, Deserialize")
     expand_when_ready(buf, drow, dcol + 2) -- warm: proc macros are built
@@ -841,7 +881,10 @@ describe("live rust-analyzer", function()
   end)
 
   it("macro signature: the popup of a user macro_rules! highlights the arm that fits", function()
-    H.known_issue({ "windows", "macos" }, "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)")
+    H.known_issue(
+      { "windows", "macos" },
+      "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)"
+    )
     local _, buf = open_lab()
     local row, col = find(buf, "pair!(1, 2)")
     expand_when_ready(buf, row, col + 1) -- rust-analyzer is ready
@@ -855,7 +898,10 @@ describe("live rust-analyzer", function()
   end)
 
   it("macro signature: vec! is found in the standard library and its arms are shown", function()
-    H.known_issue({ "windows", "macos" }, "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)")
+    H.known_issue(
+      { "windows", "macos" },
+      "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)"
+    )
     local _, buf = open_lab()
     local row, col = find(buf, "vec![1, 2, 3]")
     expand_when_ready(buf, row, col + 1)
@@ -868,7 +914,10 @@ describe("live rust-analyzer", function()
   end)
 
   it("the popup follows the typed arguments of vec![ and closes again", function()
-    H.known_issue({ "windows", "macos" }, "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)")
+    H.known_issue(
+      { "windows", "macos" },
+      "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)"
+    )
     local _, buf = open_lab()
     local row, col = find(buf, "let v = vec![1, 2, 3];")
     expand_when_ready(buf, row, col + 9)
@@ -906,7 +955,10 @@ describe("live rust-analyzer", function()
   end)
 
   it("hint diagnostics follow the edits of a real rust buffer", function()
-    H.known_issue({ "windows", "macos" }, "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)")
+    H.known_issue(
+      { "windows", "macos" },
+      "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)"
+    )
     local _, buf = open_lab()
     local n = vim.api.nvim_buf_line_count(buf)
     vim.api.nvim_buf_set_lines(buf, n, n, false, { "fn hints() {", '    println!("{} {}", 1);', "}" })
@@ -923,7 +975,10 @@ describe("live rust-analyzer", function()
   end)
 
   it("falls back to cargo expand, labelled, where rust-analyzer expands nothing", function()
-    H.known_issue({ "windows", "macos" }, "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)")
+    H.known_issue(
+      { "windows", "macos" },
+      "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)"
+    )
     if vim.fn.executable("cargo-expand") ~= 1 then
       H.skip_file("cargo-expand is not installed")
     end
@@ -945,7 +1000,10 @@ describe("live rust-analyzer", function()
   end)
 
   it("does not run cargo expand for a cursor that is not on a macro", function()
-    H.known_issue({ "windows", "macos" }, "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)")
+    H.known_issue(
+      { "windows", "macos" },
+      "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)"
+    )
     local _, buf = open_lab()
     local drow, dcol = find(buf, "Serialize, Deserialize")
     expand_when_ready(buf, drow, dcol + 2)
@@ -964,7 +1022,10 @@ describe("live rust-analyzer", function()
   end)
 
   it(":MacroExpand on a literal inside the arguments expands that call, not the crate", function()
-    H.known_issue({ "windows", "macos" }, "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)")
+    H.known_issue(
+      { "windows", "macos" },
+      "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)"
+    )
     local _, buf = open_lab()
     local row, col = find(buf, "pair!(1, 2)")
     expand_when_ready(buf, row, col + 1)
@@ -978,7 +1039,10 @@ describe("live rust-analyzer", function()
   end)
 
   it("<C-k> and the other keys are buffer-local on a rust-analyzer buffer", function()
-    H.known_issue({ "windows", "macos" }, "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)")
+    H.known_issue(
+      { "windows", "macos" },
+      "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)"
+    )
     local _, buf = open_lab()
     H.wait_for(function()
       local m = vim.fn.maparg("<C-k>", "i", false, true)
@@ -987,7 +1051,10 @@ describe("live rust-analyzer", function()
   end)
 
   it("keys and commands are registered", function()
-    H.known_issue({ "windows", "macos" }, "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)")
+    H.known_issue(
+      { "windows", "macos" },
+      "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)"
+    )
     local _, buf = open_lab()
     for _, c in ipairs({ "MacroExpand", "MacroFormatFix", "MacroSignature", "ProcMacroStatus" }) do
       H.eq(2, vim.fn.exists(":" .. c), c)
@@ -1001,7 +1068,10 @@ describe("live rust-analyzer", function()
   end)
 
   it(":ProcMacroStatus lists the workspace proc-macro crates and writes the ignore setting", function()
-    H.known_issue({ "windows", "macos" }, "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)")
+    H.known_issue(
+      { "windows", "macos" },
+      "live rust-analyzer flow fails or hangs on Windows (run 39647013043) and macOS (macos-latest run 39668277143: the file timed out after 240 s in :MacroExpand)"
+    )
     local dir, buf = open_lab()
     local cm = require("xyno_rust.crate_meta")
     local meta = cm.metadata(dir)
@@ -1033,7 +1103,12 @@ describe("live rust-analyzer", function()
     local client = H.clients(buf, "rust-analyzer")[1]
     local status
     H.wait_for(function()
-      local r = client:request_sync("rust-analyzer/analyzerStatus", { textDocument = vim.lsp.util.make_text_document_params(buf) }, 20000, buf)
+      local r = client:request_sync(
+        "rust-analyzer/analyzerStatus",
+        { textDocument = vim.lsp.util.make_text_document_params(buf) },
+        20000,
+        buf
+      )
       status = r and r.result
       return status and status:find("procMacro_ignored", 1, true)
     end, 60000, "procMacro_ignored in rust-analyzer's config (rust-analyzer.toml)")
