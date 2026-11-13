@@ -48,7 +48,15 @@ local function rust_api_ok(name)
 end
 
 --- Configure and start the plugin. Safe to call again (autocmd groups are cleared and redefined).
----@param opts? { commands?: boolean, keymaps?: boolean|table<string, string|false>, snippets_allowed?: fun(ctx: table): boolean, trust?: "auto"|"local"|fun(root: string, what: string, cb: fun(ok: boolean)), popup?: table, attrs?: table }
+---@class xyno_macros.SetupOpts
+---@field commands? boolean
+---@field keymaps? boolean|table<string, string|false>
+---@field snippets_allowed? fun(ctx: table): boolean
+---@field trust? "auto"|"local"|fun(root: string, what: string, cb: fun(ok: boolean))
+---@field popup? table
+---@field attrs? table
+
+---@param opts? xyno_macros.SetupOpts
 function M.setup(opts)
   opts = vim.tbl_deep_extend("force", vim.deepcopy(M.defaults), opts or {})
   if vim.fn.has("nvim-0.12") ~= 1 then
