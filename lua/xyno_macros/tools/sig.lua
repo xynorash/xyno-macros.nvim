@@ -2,7 +2,7 @@
 -- Part of xyno_macros.tools (the facade merges every part into one table).
 local M = {}
 
-local uv = vim.uv or vim.loop
+local uv = vim.uv
 
 local Lex = require("xyno_macros.tools.lex")
 local Rules = require("xyno_macros.tools.rules")

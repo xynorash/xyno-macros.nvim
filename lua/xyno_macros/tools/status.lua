@@ -2,7 +2,7 @@
 -- Part of xyno_macros.tools (the facade merges every part into one table).
 local M = {}
 
-local uv = vim.uv or vim.loop
+local uv = vim.uv
 
 local Sig = require("xyno_macros.tools.sig")
 local ra_client = Sig._ra_client
