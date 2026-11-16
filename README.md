@@ -13,7 +13,7 @@ rust-analyzer returns nothing inside `#[serde(...)]` or `#[arg(...)]`, so the ke
 ## Requirements
 
 - Neovim 0.12+
-- [xyno-rust.nvim](https://github.com/xynorash/xyno-rust.nvim) (modules `crate_meta`, `code_actions`, `fsutil`, `rust_context`)
+- [xyno-rust.nvim](https://github.com/xynorash/xyno-rust.nvim) (modules `crate_meta`, `code_actions`, `fsutil`, `rust_context`) `setup()` also checks the API version (`require("xyno_rust").compatible(require("xyno_macros").requires_rust_api)`, now `1.1`): a xyno-rust.nvim with another major or an older minor gives one error line naming the fix, and nothing starts. The CI workflow fetches the dependencies by tag (`XYNO_RUST_REF`, `XYNO_IMPORTS_REF`), never `main`; pin your own plugin manager the same way (`tag = "v0.2.0"` or a commit) so a breaking major cannot arrive unannounced.
 - [xyno-imports.nvim](https://github.com/xynorash/xyno-imports.nvim) (the import of an accepted derive goes through its engine)
 - rust-analyzer started through `vim.lsp` (I use [rustaceanvim](https://github.com/mrcjkb/rustaceanvim)); the proc-macro rebuild key of the status window uses its `:RustLsp`
 - `cargo` in `$PATH` (workspace and dependency metadata); `cargo-expand` is the fallback of `:MacroExpand` where rust-analyzer expands nothing
@@ -58,13 +58,43 @@ Load the plugin with `ft = "rust"` (as above) or `event = "VeryLazy"`: the signa
   commands = true,         -- :MacroAttrs :MacroExpand :MacroFormatFix :MacroSignature :ProcMacroStatus
   keymaps = false,         -- false | true | { expand = lhs|false, status = lhs|false, signature = lhs|false }
   snippets_allowed = nil,  -- function(ctx) -> boolean: where the select!/matches!/vec! snippets may appear
+  trust = "auto",           -- who decides before `cargo expand` builds the crate: "auto" | "local" | function(root, what, cb)
+  popup = {},              -- layout of the macro popup, see below
   attrs = {},              -- tuning of the attribute completion, see below
 }
 ```
 
+Options are validated: a wrong type, an unknown key or an out-of-range number gives one warning listing every problem, the valid parts are applied and the rest keeps its default.
+
+| option | default | meaning |
+| --- | --- | --- |
+| `commands` | `true` | define the five user commands |
+| `keymaps` | `false` | `true`, or a table of the keys you want (see below) |
+| `snippets_allowed` | built-in guard | `function(ctx) -> boolean` |
+| `trust` | `"auto"` | `"auto"`, `"local"` or `function(root, what, cb)` |
+| `popup.max_height` | `14` | lines of the macro popup (1 to 1000) |
+| `popup.min_width` | `20` | columns |
+| `popup.max_width` | screen width minus 6 | columns (not below `min_width`) |
+| `popup.border` | `'winborder'`, else `"rounded"` | `rounded`, `single`, `double`, `solid`, `none`, `shadow` |
+| `popup.prefer` | `"below"` | `"below"` or `"above"`: where it opens when both fit |
+| `attrs.<key>` | see below | numbers and the schema directory name, typed like the default |
+
+### Highlight groups
+
+Defined with `default = true` (your colorscheme or config wins) and re-linked after `:colorscheme`:
+
+| group | links to | used for |
+| --- | --- | --- |
+| `XynoMacrosFloat` | `NormalFloat` | popup background |
+| `XynoMacrosBorder` | `FloatBorder` | popup border |
+| `XynoMacrosBest` | `PmenuSel` | the matcher arm that fits the call |
+| `XynoMacrosDim` | `Comment` | arms that cannot match |
+
+The completion menus are blink.cmp's (its own groups); `:MacroExpand` and `:ProcMacroStatus` open ordinary splits.
+
 No global keymap is set by default. `keymaps = true` maps `<leader>rx` (expand), `<leader>rq` (status) and insert-mode `<C-k>` (the macro popup first, `vim.lsp.buf.signature_help` when the cursor is not in a macro call), buffer-local in Rust buffers that have a rust-analyzer client attached. A table maps only what you list, to the keys you choose.
 
-`snippets_allowed(ctx)` gets blink's context (`line`, `cursor`, `bufnr`). The default offers the snippets neither after a `.` nor inside a string or comment. It does not carry over the original configuration's own expression-node check, so `select!` or `matches!` can be offered in a few places the original blocked; set `snippets_allowed` to decide differently.
+`snippets_allowed(ctx)` gets blink's context (`line`, `cursor`, `bufnr`). The default offers the snippets neither after a `.`, nor inside a string or comment, nor in an expression position (call arguments, struct literal fields, macro token trees, an unfinished `call(a, be`); a block inside those is a statement position again. That is the guard of the original configuration, restored; set `snippets_allowed` to decide differently.
 
 `attrs` overrides values of `require("xyno_macros.attrs").config`: `context_lines = 15` (how far above the cursor an attribute may start), `window_min = 1500` and `window_lines = 300` (longer files are parsed around the cursor only), `learn_ttl = 120`, `learn_max_files = 300`, `learn_max_bytes`, `derive_max_files = 80`, `derive_max_bytes`, `import_attempts = 10`, `import_interval = 500`, and `user_dir = ".xyno-macros/attrs"` (the project schema directory).
 
@@ -76,11 +106,15 @@ opts = function(_, opts) return require("xyno_macros").blink_opts(opts) end
 
 registers the provider `macro_attrs` (module `xyno_macros.attrs`, `score_offset = 100`, for Rust buffers, next to the default sources) and the provider `macro_tools` (module `xyno_macros.tools`, the snippets, added to `sources.default`).
 
+## Trust before `cargo expand`
+
+`cargo expand` compiles the crate, which runs the project's `build.rs` and proc macros (and those of its dependencies). The `:MacroExpand` fallback therefore does nothing until the workspace is trusted: you are asked (trust this workspace, run once, do not run) and a refusal or a cancelled prompt runs nothing. `trust = "auto"` uses `xyno_rust.trust` (`:RustTrust`) when the installed xyno-rust.nvim has it, so one trust list serves all xyno plugins; otherwise an interim check of this plugin (`lua/xyno_macros/trust.lua`, list in `stdpath("state")/xyno-macros/trust.json`, shared between nvim instances) answers; `trust = "local"` always uses the interim check; a function `(root, what, cb)` replaces both (`cb(true)` to allow, so `function(_, _, cb) cb(true) end` opts out). `:checkhealth xyno_macros` says which one is in use. Limits: rust-analyzer's own expansion (`expandMacro`) runs proc macros inside rust-analyzer and is not gated by this plugin (xyno-rust's `ra_overrides` is the place for that), and "trusted" is a per-directory answer, not a sandbox.
+
 ## Commands
 
 | Command | What it does |
 | --- | --- |
-| `:MacroExpand` | Expand the macro under the cursor (rust-analyzer's `expandMacro`) in a read-only split. `<CR>` steps into the macro call under the cursor, `<BS>` goes back, `gi` lists the generated items, `q` closes. Falls back to `cargo expand` where rust-analyzer expands nothing. |
+| `:MacroExpand` | Expand the macro under the cursor (rust-analyzer's `expandMacro`) in a read-only split. `<CR>` steps into the macro call under the cursor, `<BS>` goes back, `gi` lists the generated items, `q` closes. Falls back to `cargo expand` where rust-analyzer expands nothing; that fallback builds the crate (`build.rs`, proc macros), so it asks for workspace trust first (see below). |
 | `:MacroFormatFix` | Append the missing arguments (`todo!()`) of the format macro call at the cursor. |
 | `:MacroSignature` | Show the matcher arms of the `macro_rules!` call at the cursor (found with go-to-definition), plus format-string and sqlx bind hints. The popup also opens by itself after `(`, `[`, `{` or `!` in insert mode. |
 | `:ProcMacroStatus` | List the proc-macro crates of the workspace, the macros that were not expanded, and rust-analyzer's view. In the window: `r` rebuilds proc macros, `R` refreshes, `i` or `<CR>` on a crate writes it to `procMacro.ignored` in `rust-analyzer.toml`, `<CR>` on a diagnostic jumps to it, `q` closes. |
@@ -88,7 +122,7 @@ registers the provider `macro_attrs` (module `xyno_macros.attrs`, `score_offset 
 
 ## Completion data
 
-One JSON file per crate in `data/macro_attrs/` (serde, clap, tokio, sqlx, thiserror, derive_more, strum, bon, schemars, utoipa), format in [data/macro_attrs/README.md](data/macro_attrs/README.md). A schema is used only when the workspace member depends on the crate, within the version range of the file, and when the helper attribute is in scope (a derive that brings it is on the item, or the attribute macro is named or imported). A project overrides or adds schemas with `.xyno-macros/attrs/*.json` in the workspace root. For dependency crates without a schema, keys that the workspace and the crate's own sources already write inside that attribute are offered, by frequency. `#[derive(` completes the built-in derives and the derive macros found in the dependencies' proc-macro sources; accepting one that is not imported asks the xyno-imports engine for the `use`.
+One JSON file per crate in `data/macro_attrs/` (serde, clap, tokio, sqlx, thiserror, derive_more, strum, bon, schemars, utoipa, tracing, diesel, axum, bevy), format in [data/macro_attrs/README.md](data/macro_attrs/README.md). A schema is used only when the workspace member depends on the crate, within the version range of the file, and when the helper attribute is in scope (a derive that brings it is on the item, or the attribute macro is named or imported). The last four were written from the crates' docs on docs.rs on 2026-11-12 (tracing-attributes 0.1.31, diesel 2.3.14, axum-macros 0.5.1, bevy_ecs 0.20.1; each file has a `verified` note). Not covered, on purpose: anyhow (no helper attributes), validator (its docs page lists the keys without their syntax), async-trait (its only argument, `?Send`, is not a key=value form), and utoipa 6.0 (released 2026-09-22; the schema covers 4.x and 5.x, `scripts/schemas.lua drift` reports it). `nvim -l scripts/schemas.lua check` validates every file strictly (typos in field names, an enum without values, `conflicts` naming a missing key, bad `applies_to`, broken snippet placeholders, non-https links; the specs run it), `fmt FILE` writes the canonical layout, `new CRATE` prints a skeleton, and `drift` (network) compares the version ranges with the newest crates.io release and checks that the docs links answer; the first run found a dead sqlx link and the utoipa 6 release. A project overrides or adds schemas with `.xyno-macros/attrs/*.json` in the workspace root. For dependency crates without a schema, keys that the workspace and the crate's own sources already write inside that attribute are offered, by frequency. `#[derive(` completes the built-in derives and the derive macros found in the dependencies' proc-macro sources; accepting one that is not imported asks the xyno-imports engine for the `use`.
 
 ## How it works
 
@@ -102,7 +136,11 @@ A small lexer reads the attribute from its `#[` to the cursor (strings, nesting,
 
 ## Extracted from xynovim
 
-This module comes from [xynovim](https://github.com/xynorash/xynovim), my Neovim configuration for Rust. The code is the same apart from the namespace (`config.macro_attrs` and `config.macro_tools` became `xyno_macros.attrs` and `xyno_macros.tools`, the helpers `xyno_rust.*` and `xyno_imports.engine`), `setup()` taking options, the keys being opt-in (the original bound them itself), the blink.cmp sources registered through `blink_opts()`, the schema directory read from the plugin directory and the project one renamed to `.xyno-macros/attrs`, a built-in snippet guard in place of my configuration's own, and a notice instead of an error when `:RustLsp` does not exist.
+This module comes from [xynovim](https://github.com/xynorash/xynovim), my Neovim configuration for Rust. The code is the same apart from the namespace (`config.macro_attrs` and `config.macro_tools` became `xyno_macros.attrs` and `xyno_macros.tools`, the helpers `xyno_rust.*` and `xyno_imports.engine`), `setup()` taking options, the keys being opt-in (the original bound them itself), the blink.cmp sources registered through `blink_opts()`, the schema directory read from the plugin directory and the project one renamed to `.xyno-macros/attrs`, a built-in snippet guard (the same checks as my configuration's), a trust gate before `cargo expand`, and a notice instead of an error when `:RustLsp` does not exist.
+
+## Layout
+
+`lua/xyno_macros/tools.lua` is the facade (setup, commands, keys); the parts are `tools/lex.lua`, `format.lua`, `rules.lua` (pure: strings and tables), `sig.lua` (popup), `snip.lua`, `lens.lua` (`:MacroExpand`) and `status.lua` (`:ProcMacroStatus`). `ui.lua` holds the popup layout and the highlight groups. The public table `require("xyno_macros.tools")` is unchanged by the split.
 
 ## Tests
 

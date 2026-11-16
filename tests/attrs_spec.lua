@@ -46,7 +46,9 @@ after_each(function()
   pcall(vim.cmd, "silent! %bwipeout!")
 end)
 
-local registry_ok = cm.registry_dir("serde_derive") and cm.registry_dir("clap_derive") and cm.registry_dir("thiserror-impl")
+local registry_ok = cm.registry_dir("serde_derive")
+  and cm.registry_dir("clap_derive")
+  and cm.registry_dir("thiserror-impl")
 
 -- ----------------------------------------------------------------- helpers
 
@@ -141,7 +143,16 @@ end
 
 -- ------------------------------------------------------- the table of cases
 
-local SERDE_CASES = { "lowercase", "UPPERCASE", "PascalCase", "camelCase", "snake_case", "SCREAMING_SNAKE_CASE", "kebab-case", "SCREAMING-KEBAB-CASE" }
+local SERDE_CASES = {
+  "lowercase",
+  "UPPERCASE",
+  "PascalCase",
+  "camelCase",
+  "snake_case",
+  "SCREAMING_SNAKE_CASE",
+  "kebab-case",
+  "SCREAMING-KEBAB-CASE",
+}
 
 -- { name, src, has, lacks, dir = "wide", exact = n, registry = true }
 local cases = {
@@ -149,7 +160,20 @@ local cases = {
   {
     "serde container struct",
     "use serde::Serialize;\n#[derive(Serialize)]\n#[serde(|)]\nstruct A { x: u32 }",
-    { "rename", "rename_all", "deny_unknown_fields", "default", "bound", "transparent", "from", "try_from", "into", "remote", "tag", "crate" },
+    {
+      "rename",
+      "rename_all",
+      "deny_unknown_fields",
+      "default",
+      "bound",
+      "transparent",
+      "from",
+      "try_from",
+      "into",
+      "remote",
+      "tag",
+      "crate",
+    },
     { "skip", "flatten", "alias", "skip_serializing_if", "content", "untagged", "getter" },
   },
   {
@@ -161,7 +185,22 @@ local cases = {
   {
     "serde field",
     "#[derive(Serialize, Deserialize)]\nstruct A {\n    #[serde(|)]\n    x: u32,\n}",
-    { "rename", "alias", "default", "skip", "skip_serializing", "skip_deserializing", "skip_serializing_if", "flatten", "with", "serialize_with", "deserialize_with", "bound", "getter", "borrow" },
+    {
+      "rename",
+      "alias",
+      "default",
+      "skip",
+      "skip_serializing",
+      "skip_deserializing",
+      "skip_serializing_if",
+      "flatten",
+      "with",
+      "serialize_with",
+      "deserialize_with",
+      "bound",
+      "getter",
+      "borrow",
+    },
     { "deny_unknown_fields", "tag", "transparent", "rename_all", "from", "remote" },
   },
   {
@@ -196,7 +235,7 @@ local cases = {
   },
   {
     "a key already written is not offered again",
-    "#[derive(Serialize)]\nstruct A {\n    #[serde(rename = \"x\", |)]\n    a: u32,\n}",
+    '#[derive(Serialize)]\nstruct A {\n    #[serde(rename = "x", |)]\n    a: u32,\n}',
     { "default", "skip_serializing_if" },
     { "rename" },
   },
@@ -208,13 +247,13 @@ local cases = {
   },
   {
     "with conflicts with serialize_with and deserialize_with",
-    "#[derive(Serialize)]\nstruct A {\n    #[serde(with = \"m\", |)]\n    a: u32,\n}",
+    '#[derive(Serialize)]\nstruct A {\n    #[serde(with = "m", |)]\n    a: u32,\n}',
     { "default", "alias" },
     { "with", "serialize_with", "deserialize_with", "skip" },
   },
   {
     "conflicts work in both directions (serialize_with hides with)",
-    "#[derive(Serialize)]\nstruct A {\n    #[serde(serialize_with = \"f\", |)]\n    a: u32,\n}",
+    '#[derive(Serialize)]\nstruct A {\n    #[serde(serialize_with = "f", |)]\n    a: u32,\n}',
     { "deserialize_with", "default" },
     { "with", "skip", "skip_serializing", "serialize_with" },
   },
@@ -226,7 +265,7 @@ local cases = {
   },
   {
     "a repeatable key (alias) stays offered",
-    "#[derive(Deserialize)]\nstruct A {\n    #[serde(alias = \"a\", |)]\n    a: u32,\n}",
+    '#[derive(Deserialize)]\nstruct A {\n    #[serde(alias = "a", |)]\n    a: u32,\n}',
     { "alias", "default" },
     { "rename_all" },
   },
@@ -311,7 +350,24 @@ local cases = {
   {
     "clap arg on a field",
     "#[derive(Parser)]\nstruct C {\n    #[arg(|)]\n    n: u32,\n}",
-    { "short", "long", "value_name", "default_value", "env", "num_args", "value_enum", "value_parser", "action", "global", "help", "long_help", "conflicts_with", "requires", "group", "required" },
+    {
+      "short",
+      "long",
+      "value_name",
+      "default_value",
+      "env",
+      "num_args",
+      "value_enum",
+      "value_parser",
+      "action",
+      "global",
+      "help",
+      "long_help",
+      "conflicts_with",
+      "requires",
+      "group",
+      "required",
+    },
     { "name", "about", "subcommand_required", "subcommand" },
   },
   {
@@ -335,7 +391,20 @@ local cases = {
   {
     "clap command on the container",
     "#[derive(Parser)]\n#[command(|)]\nstruct C {}",
-    { "name", "version", "author", "about", "long_about", "subcommand_required", "arg_required_else_help", "propagate_version", "next_line_help", "disable_help_flag", "disable_help_subcommand", "rename_all" },
+    {
+      "name",
+      "version",
+      "author",
+      "about",
+      "long_about",
+      "subcommand_required",
+      "arg_required_else_help",
+      "propagate_version",
+      "next_line_help",
+      "disable_help_flag",
+      "disable_help_subcommand",
+      "rename_all",
+    },
     { "short", "long", "subcommand", "flatten", "value_name" },
   },
   {
@@ -674,7 +743,18 @@ describe("item content", function()
     local shipped = ma.shipped()
     H.ok(next(shipped), "schemas loaded")
     H.eq(0, #ma.load_errors, "load errors: " .. vim.inspect(ma.load_errors))
-    for _, crate in ipairs({ "serde", "clap", "thiserror", "tokio", "strum", "derive_more", "sqlx", "utoipa", "schemars", "bon" }) do
+    for _, crate in ipairs({
+      "serde",
+      "clap",
+      "thiserror",
+      "tokio",
+      "strum",
+      "derive_more",
+      "sqlx",
+      "utoipa",
+      "schemars",
+      "bon",
+    }) do
       H.ok(shipped[crate], "schema for " .. crate)
       H.ok(shipped[crate].docs_url, crate .. " has docs_url")
       H.ok(shipped[crate].versions, crate .. " has versions")
@@ -687,7 +767,11 @@ describe("item content", function()
           if arg.kind == "enum" then
             H.ok(arg.values and #arg.values > 0, ("%s.%s.%s enum without values"):format(crate, attr.name, arg.key))
           end
-          local id = arg.key .. "|" .. table.concat(arg.applies_to or {}, ",") .. "|" .. table.concat(arg.derives or {}, ",")
+          local id = arg.key
+            .. "|"
+            .. table.concat(arg.applies_to or {}, ",")
+            .. "|"
+            .. table.concat(arg.derives or {}, ",")
           H.not_ok(keys[id], ("%s.%s: %s defined twice for the same targets"):format(crate, attr.name, arg.key))
           keys[id] = true
           for _, c in ipairs(arg.conflicts or {}) do
@@ -699,7 +783,32 @@ describe("item content", function()
   end)
 
   it("serde schema has every key the task lists", function()
-    local want = { "rename", "rename_all", "deny_unknown_fields", "tag", "content", "untagged", "default", "skip", "skip_serializing", "skip_deserializing", "skip_serializing_if", "flatten", "with", "serialize_with", "deserialize_with", "alias", "bound", "transparent", "from", "try_from", "into", "getter", "remote", "borrow" }
+    local want = {
+      "rename",
+      "rename_all",
+      "deny_unknown_fields",
+      "tag",
+      "content",
+      "untagged",
+      "default",
+      "skip",
+      "skip_serializing",
+      "skip_deserializing",
+      "skip_serializing_if",
+      "flatten",
+      "with",
+      "serialize_with",
+      "deserialize_with",
+      "alias",
+      "bound",
+      "transparent",
+      "from",
+      "try_from",
+      "into",
+      "getter",
+      "remote",
+      "borrow",
+    }
     local have = {}
     for _, a in ipairs(ma.shipped().serde.attributes[1].args) do
       have[a.key] = true
@@ -709,33 +818,36 @@ describe("item content", function()
     end
   end)
 
-  it("derive helper attributes in the schemas are declared by the real proc-macro crates (where in the registry)", function()
-    if not registry_ok then
-      skip("registry sources of serde_derive / clap_derive / thiserror-impl missing")
-    end
-    local checks = {
-      { "serde_derive", "serde", "Serialize" },
-      { "clap_derive", "arg", "Parser" },
-      { "clap_derive", "command", "Parser" },
-      { "clap_derive", "value", "ValueEnum" },
-      { "clap_derive", "group", "Args" },
-      { "thiserror-impl", "error", "Error" },
-      { "thiserror-impl", "from", "Error" },
-    }
-    for _, c in ipairs(checks) do
-      local dir = cm.registry_dir(c[1])
-      local found = false
-      for _, d in ipairs(dir and vim.fn.glob(dir .. "/src/*.rs", true, true) or {}) do
-        local text = assert(io.open(d)):read("*a")
-        local s = text:find("proc_macro_derive%s*%(%s*" .. c[3])
-        if s then
-          local inside = text:sub(s, s + 300)
-          found = found or inside:find("%f[%w_]" .. c[2] .. "%f[^%w_]") ~= nil
-        end
+  it(
+    "derive helper attributes in the schemas are declared by the real proc-macro crates (where in the registry)",
+    function()
+      if not registry_ok then
+        skip("registry sources of serde_derive / clap_derive / thiserror-impl missing")
       end
-      H.ok(found, ("%s declares helper %s on %s"):format(c[1], c[2], c[3]))
+      local checks = {
+        { "serde_derive", "serde", "Serialize" },
+        { "clap_derive", "arg", "Parser" },
+        { "clap_derive", "command", "Parser" },
+        { "clap_derive", "value", "ValueEnum" },
+        { "clap_derive", "group", "Args" },
+        { "thiserror-impl", "error", "Error" },
+        { "thiserror-impl", "from", "Error" },
+      }
+      for _, c in ipairs(checks) do
+        local dir = cm.registry_dir(c[1])
+        local found = false
+        for _, d in ipairs(dir and vim.fn.glob(dir .. "/src/*.rs", true, true) or {}) do
+          local text = assert(io.open(d)):read("*a")
+          local s = text:find("proc_macro_derive%s*%(%s*" .. c[3])
+          if s then
+            local inside = text:sub(s, s + 300)
+            found = found or inside:find("%f[%w_]" .. c[2] .. "%f[^%w_]") ~= nil
+          end
+        end
+        H.ok(found, ("%s declares helper %s on %s"):format(c[1], c[2], c[3]))
+      end
     end
-  end)
+  )
 end)
 
 -- ------------------------------------------------------------- long files
@@ -756,7 +868,11 @@ describe("long files", function()
     local labels = vim.tbl_map(function(i)
       return i.label
     end, items)
-    has_all(labels, { "transparent", "fmt" }, "thiserror's keys: Error is imported from thiserror in the head of the file")
+    has_all(
+      labels,
+      { "transparent", "fmt" },
+      "thiserror's keys: Error is imported from thiserror in the head of the file"
+    )
     has_none(labels, { "source", "ignore" }, "derive_more's keys")
     H.eq("variant", info.target.kind)
     H.ok(ms < 300, ("took %.0f ms for %d lines"):format(ms, #lines))
@@ -851,12 +967,15 @@ default = []
     for _, d in ipairs(list) do
       by[d.alias] = d
     end
-    H.ok(by.serde and by.my_tokio and by["local"] and by.dotted and by.clap and by.libc and by.pretty_assertions, vim.inspect(list))
+    H.ok(
+      by.serde and by.my_tokio and by["local"] and by.dotted and by.clap and by.libc and by.pretty_assertions,
+      vim.inspect(list)
+    )
     H.eq("tokio", by.my_tokio.name)
     H.eq("../local", by["local"].path)
     H.not_ok(by.features or by.version, "continuation lines are not dependencies")
     H.not_ok(by.default, "[features] is not a dependency table")
-    local skip_dev = ma._manifest_deps("[dev-dependencies]\nfoo = \"1\"\n[dependencies]\nbar = \"1\"\n", true)
+    local skip_dev = ma._manifest_deps('[dev-dependencies]\nfoo = "1"\n[dependencies]\nbar = "1"\n', true)
     H.eq(1, #skip_dev)
     H.eq("bar", skip_dev[1].alias)
   end)
@@ -903,7 +1022,8 @@ describe("project schemas (.xyno-macros/attrs)", function()
     local dir = H.tmpdir() .. "/proj"
     write(
       dir .. "/Cargo.toml",
-      '[package]\nname = "proj"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\nserde = "1"\n' .. (extra_toml or "")
+      '[package]\nname = "proj"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\nserde = "1"\n'
+        .. (extra_toml or "")
     )
     write(dir .. "/src/main.rs", "fn main() {}\n")
     return dir
@@ -915,7 +1035,14 @@ describe("project schemas (.xyno-macros/attrs)", function()
       dir .. "/.xyno-macros/attrs/serde.json",
       vim.json.encode({
         crate = "serde",
-        attributes = { { name = "serde", derives = { "Serialize" }, applies_to = { "container" }, args = { { key = "my_key", kind = "flag", doc = "mine" } } } },
+        attributes = {
+          {
+            name = "serde",
+            derives = { "Serialize" },
+            applies_to = { "container" },
+            args = { { key = "my_key", kind = "flag", doc = "mine" } },
+          },
+        },
       })
     )
     local labels = at("#[derive(Serialize)]\n#[serde(|)]\nstruct A;", dir)
@@ -961,29 +1088,44 @@ describe("project schemas (.xyno-macros/attrs)", function()
     H.match(table.concat(ma.load_errors, "\n"), "bad.json", true)
   end)
 
-  it("a hand-written file may give a string where a list is expected, and a wrong shape is reported, not raised", function()
-    local dir = ws()
-    write(
-      dir .. "/.xyno-macros/attrs/serde.json",
-      [[{"crate": "serde", "attributes": [
+  it(
+    "a hand-written file may give a string where a list is expected, and a wrong shape is reported, not raised",
+    function()
+      local dir = ws()
+      write(
+        dir .. "/.xyno-macros/attrs/serde.json",
+        [[{"crate": "serde", "attributes": [
         {"name": "serde", "derives": "Serialize", "applies_to": "field", "args": [{"key": "a", "conflicts": "b", "applies_to": "field"}, {"key": "b"}]},
         {"name": "other", "args": "nope"}
       ]}]]
-    )
-    local labels = at("#[derive(Serialize)]\nstruct A {\n    #[serde(|)]\n    x: u32,\n}", dir)
-    H.eq({ "a", "b" }, labels)
-    H.eq({}, (at("#[derive(Serialize)]\nstruct A {\n    #[serde(a, |)]\n    x: u32,\n}", dir)), "a conflicts with b (given as a string): both gone")
-    write(dir .. "/.xyno-macros/attrs/serde.json", '{"crate": "serde", "attributes": "oops"}')
-    local before = #ma.load_errors
-    at("#[derive(Serialize)]\n#[serde(|)]\nstruct A;", dir)
-    H.ok(#ma.load_errors > before)
-  end)
+      )
+      local labels = at("#[derive(Serialize)]\nstruct A {\n    #[serde(|)]\n    x: u32,\n}", dir)
+      H.eq({ "a", "b" }, labels)
+      H.eq(
+        {},
+        (at("#[derive(Serialize)]\nstruct A {\n    #[serde(a, |)]\n    x: u32,\n}", dir)),
+        "a conflicts with b (given as a string): both gone"
+      )
+      write(dir .. "/.xyno-macros/attrs/serde.json", '{"crate": "serde", "attributes": "oops"}')
+      local before = #ma.load_errors
+      at("#[derive(Serialize)]\n#[serde(|)]\nstruct A;", dir)
+      H.ok(#ma.load_errors > before)
+    end
+  )
 
   it("editing a project file is picked up by the next request", function()
     local dir = ws()
     local path = dir .. "/.xyno-macros/attrs/serde.json"
     local function put(key)
-      write(path, vim.json.encode({ crate = "serde", attributes = { { name = "serde", derives = { "Serialize" }, args = { { key = key, kind = "flag", doc = "d" } } } } }))
+      write(
+        path,
+        vim.json.encode({
+          crate = "serde",
+          attributes = {
+            { name = "serde", derives = { "Serialize" }, args = { { key = key, kind = "flag", doc = "d" } } },
+          },
+        })
+      )
     end
     put("first")
     H.eq({ "first" }, (at("#[derive(Serialize)]\n#[serde(|)]\nstruct A;", dir)))
@@ -1000,16 +1142,28 @@ describe("learn from usage (attributes without a schema)", function()
   --- and writing the attribute in its own code and in the dependency's examples.
   local function fancy_ws()
     local base = H.tmpdir()
-    write(base .. "/fancy/Cargo.toml", '[package]\nname = "fancy"\nversion = "0.1.0"\nedition = "2021"\n\n[lib]\nproc-macro = true\n')
-    write(base .. "/fancy/src/lib.rs", '#[proc_macro_derive(Fancy, attributes(fancy))]\npub fn fancy(i: TokenStream) -> TokenStream { i }\n')
-    write(base .. "/fancy/examples/e.rs", '#[derive(Fancy)]\n#[fancy(gamma, alpha = 1)]\nstruct E;\n/// #[fancy(gamma)]\n/// #[fancy(gamma)]\n')
-    write(base .. "/ws/Cargo.toml", '[package]\nname = "ws"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nfancy = { path = "../fancy" }\n')
+    write(
+      base .. "/fancy/Cargo.toml",
+      '[package]\nname = "fancy"\nversion = "0.1.0"\nedition = "2021"\n\n[lib]\nproc-macro = true\n'
+    )
+    write(
+      base .. "/fancy/src/lib.rs",
+      "#[proc_macro_derive(Fancy, attributes(fancy))]\npub fn fancy(i: TokenStream) -> TokenStream { i }\n"
+    )
+    write(
+      base .. "/fancy/examples/e.rs",
+      "#[derive(Fancy)]\n#[fancy(gamma, alpha = 1)]\nstruct E;\n/// #[fancy(gamma)]\n/// #[fancy(gamma)]\n"
+    )
+    write(
+      base .. "/ws/Cargo.toml",
+      '[package]\nname = "ws"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nfancy = { path = "../fancy" }\n'
+    )
     write(
       base .. "/ws/src/a.rs",
       table.concat({
-        '#[derive(Fancy)]\n#[fancy(alpha = 1, beta(x, y))]\nstruct A;',
+        "#[derive(Fancy)]\n#[fancy(alpha = 1, beta(x, y))]\nstruct A;",
         '#[derive(Fancy)]\n#[fancy(alpha = "two")]\nstruct B;',
-        '#[derive(Fancy)]\n#[fancy(alpha, delta = f(1, 2))]\nstruct C;',
+        "#[derive(Fancy)]\n#[fancy(alpha, delta = f(1, 2))]\nstruct C;",
         "",
       }, "\n")
     )
@@ -1112,14 +1266,17 @@ describe("the blink.cmp source", function()
     require("blink.cmp").setup(require("xyno_macros").blink_opts({ fuzzy = { implementation = "lua" } }))
   end
 
-  it("blink_opts() registers the provider for Rust buffers next to the default sources, above rust-analyzer's items", function()
-    local opts = require("xyno_macros").blink_opts({ sources = { default = { "lsp", "path" } } })
-    H.eq("xyno_macros.attrs", opts.sources.providers.macro_attrs.module)
-    H.eq("xyno_macros.tools", opts.sources.providers.macro_tools.module)
-    H.eq({ "macro_attrs", inherit_defaults = true }, opts.sources.per_filetype.rust)
-    H.eq({ "lsp", "path", "macro_tools" }, opts.sources.default)
-    H.eq(opts, require("xyno_macros").blink_opts(nil, opts) and opts, "the (_, opts) call shape returns the options")
-  end)
+  it(
+    "blink_opts() registers the provider for Rust buffers next to the default sources, above rust-analyzer's items",
+    function()
+      local opts = require("xyno_macros").blink_opts({ sources = { default = { "lsp", "path" } } })
+      H.eq("xyno_macros.attrs", opts.sources.providers.macro_attrs.module)
+      H.eq("xyno_macros.tools", opts.sources.providers.macro_tools.module)
+      H.eq({ "macro_attrs", inherit_defaults = true }, opts.sources.per_filetype.rust)
+      H.eq({ "lsp", "path", "macro_tools" }, opts.sources.default)
+      H.eq(opts, require("xyno_macros").blink_opts(nil, opts) and opts, "the (_, opts) call shape returns the options")
+    end
+  )
 
   it("is registered in blink.cmp's config", function()
     setup_blink()
@@ -1133,75 +1290,91 @@ describe("the blink.cmp source", function()
     H.eq(true, rust.inherit_defaults, "the default sources stay")
   end)
 
-  it("opens the menu while typing inside #[serde( and accepting a key expands its snippet, re-opening the values", function()
-    setup_blink()
-    local dir = H.fixture("deps-lab")
-    vim.cmd.cd(vim.fn.fnameescape(dir))
-    local path = dir .. "/src/lib.rs"
-    vim.fn.writefile({ "use serde::Serialize;", "", "#[derive(Serialize)]", "", "struct A {", "    x: u32,", "}" }, path)
-    local saved = vim.o.eventignore
-    vim.o.eventignore = "FileType" -- no rust-analyzer for this test
-    local buf = H.open(path)
-    vim.bo[buf].filetype = "rust"
-    vim.o.eventignore = saved
-    H.feed("A<Esc>") -- loads what hangs off InsertEnter before the typed text
-    vim.wait(500)
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "use serde::Serialize;", "", "#[derive(Serialize)]", "", "struct A {", "    x: u32,", "}" })
-    local list = require("blink.cmp.completion.list")
-    local result, err
-    _G.__macro_attrs_spec = function()
-      local ok, e = pcall(function()
-        require("blink.cmp").show()
-        H.wait_for(function()
-          if not require("blink.cmp").is_visible() then
-            return false
-          end
-          for _, i in ipairs(list.items) do
-            if i.label == "rename_all" and i.source_id == "macro_attrs" then
-              return true
+  it(
+    "opens the menu while typing inside #[serde( and accepting a key expands its snippet, re-opening the values",
+    function()
+      setup_blink()
+      local dir = H.fixture("deps-lab")
+      vim.cmd.cd(vim.fn.fnameescape(dir))
+      local path = dir .. "/src/lib.rs"
+      vim.fn.writefile(
+        { "use serde::Serialize;", "", "#[derive(Serialize)]", "", "struct A {", "    x: u32,", "}" },
+        path
+      )
+      local saved = vim.o.eventignore
+      vim.o.eventignore = "FileType" -- no rust-analyzer for this test
+      local buf = H.open(path)
+      vim.bo[buf].filetype = "rust"
+      vim.o.eventignore = saved
+      H.feed("A<Esc>") -- loads what hangs off InsertEnter before the typed text
+      vim.wait(500)
+      vim.api.nvim_buf_set_lines(
+        buf,
+        0,
+        -1,
+        false,
+        { "use serde::Serialize;", "", "#[derive(Serialize)]", "", "struct A {", "    x: u32,", "}" }
+      )
+      local list = require("blink.cmp.completion.list")
+      local result, err
+      _G.__macro_attrs_spec = function()
+        local ok, e = pcall(function()
+          require("blink.cmp").show()
+          H.wait_for(function()
+            if not require("blink.cmp").is_visible() then
+              return false
+            end
+            for _, i in ipairs(list.items) do
+              if i.label == "rename_all" and i.source_id == "macro_attrs" then
+                return true
+              end
+            end
+          end, 8000, "the blink menu with macro_attrs' rename_all")
+          local idx
+          for i, item in ipairs(list.items) do
+            if item.label == "rename_all" and item.source_id == "macro_attrs" then
+              idx = i
             end
           end
-        end, 8000, "the blink menu with macro_attrs' rename_all")
-        local idx
-        for i, item in ipairs(list.items) do
-          if item.label == "rename_all" and item.source_id == "macro_attrs" then
-            idx = i
-          end
+          require("blink.cmp").accept({ index = idx })
+          H.wait_for(function()
+            return vim.api.nvim_buf_get_lines(0, 3, 4, false)[1]:find('rename_all = ""', 1, true)
+          end, 5000, "the snippet text")
+          result = { line = vim.api.nvim_buf_get_lines(0, 3, 4, false)[1], active = vim.snippet.active() }
+          -- the menu comes back with the values, inside the quotes
+          H.wait_for(function()
+            if not require("blink.cmp").is_visible() then
+              return false
+            end
+            for _, i in ipairs(list.items) do
+              if i.label == "camelCase" and i.source_id == "macro_attrs" then
+                return true
+              end
+            end
+          end, 8000, "the values menu")
+          result.values = true
+        end)
+        if not ok then
+          err = e
         end
-        require("blink.cmp").accept({ index = idx })
-        H.wait_for(function()
-          return vim.api.nvim_buf_get_lines(0, 3, 4, false)[1]:find('rename_all = ""', 1, true)
-        end, 5000, "the snippet text")
-        result = { line = vim.api.nvim_buf_get_lines(0, 3, 4, false)[1], active = vim.snippet.active() }
-        -- the menu comes back with the values, inside the quotes
-        H.wait_for(function()
-          if not require("blink.cmp").is_visible() then
-            return false
-          end
-          for _, i in ipairs(list.items) do
-            if i.label == "camelCase" and i.source_id == "macro_attrs" then
-              return true
-            end
-          end
-        end, 8000, "the values menu")
-        result.values = true
-      end)
-      if not ok then
-        err = e
       end
+      vim.api.nvim_win_set_cursor(0, { 4, 0 })
+      H.feed("i#[serde(<Cmd>lua _G.__macro_attrs_spec()<CR><Esc>")
+      _G.__macro_attrs_spec = nil
+      pcall(vim.snippet.stop)
+      vim.wait(300)
+      if err then
+        error(err, 0)
+      end
+      H.eq(
+        '#[serde(rename_all = ""',
+        result.line:gsub("%)%]$", ""):gsub("%)$", ""),
+        "inserted text (closers from auto pairs may follow)"
+      )
+      H.eq(true, result.active, "snippet session")
+      H.eq(true, result.values, "values menu")
     end
-    vim.api.nvim_win_set_cursor(0, { 4, 0 })
-    H.feed("i#[serde(<Cmd>lua _G.__macro_attrs_spec()<CR><Esc>")
-    _G.__macro_attrs_spec = nil
-    pcall(vim.snippet.stop)
-    vim.wait(300)
-    if err then
-      error(err, 0)
-    end
-    H.eq('#[serde(rename_all = ""', result.line:gsub("%)%]$", ""):gsub("%)$", ""), "inserted text (closers from auto pairs may follow)")
-    H.eq(true, result.active, "snippet session")
-    H.eq(true, result.values, "values menu")
-  end)
+  )
 end)
 
 -- ------------------------------------------------------- derive accepted
@@ -1253,9 +1426,19 @@ describe("accepting a derive that is not in scope", function()
       H.eq(0, #calls, table.concat(lines, " "))
     end
     local calls = {}
-    run_execute({ "#[derive(Debug)]" }, "Debug", { macro_attrs = "derive", crate = "std", path = "Debug", builtin = true }, calls)
+    run_execute(
+      { "#[derive(Debug)]" },
+      "Debug",
+      { macro_attrs = "derive", crate = "std", path = "Debug", builtin = true },
+      calls
+    )
     H.eq(0, #calls, "builtin")
-    run_execute({ "#[derive(serde::Serialize)]" }, "Serialize", { macro_attrs = "derive", crate = "serde", path = "serde::Serialize", qualified = true }, calls)
+    run_execute(
+      { "#[derive(serde::Serialize)]" },
+      "Serialize",
+      { macro_attrs = "derive", crate = "serde", path = "serde::Serialize", qualified = true },
+      calls
+    )
     H.eq(0, #calls, "qualified")
   end)
 
@@ -1287,7 +1470,11 @@ describe("accepting a derive that is not in scope", function()
     end
 
     it("applies the single import that offers the expected path", function()
-      local applied = fake_actions({ action("Import `serde::Serialize`"), action("Import `other::Serialize`"), action("Qualify as `serde::Serialize`") })
+      local applied = fake_actions({
+        action("Import `serde::Serialize`"),
+        action("Import `other::Serialize`"),
+        action("Qualify as `serde::Serialize`"),
+      })
       ma.on_derive_accepted("Serialize", info)
       H.wait_for(function()
         return #applied > 0
@@ -1336,7 +1523,10 @@ describe("accepting a derive that is not in scope", function()
   end)
 
   it("adds the use line through rust-analyzer's own import action (real rust-analyzer)", function()
-    H.known_issue({ "macos" }, "real rust-analyzer import action did not arrive within 95 s on macos-latest (run 39655339161)")
+    H.known_issue(
+      { "macos" },
+      "real rust-analyzer import action did not arrive within 95 s on macos-latest (run 39655339161)"
+    )
     H.need_rust()
     for i = #restores, 1, -1 do
       pcall(restores[i])
@@ -1353,7 +1543,10 @@ describe("accepting a derive that is not in scope", function()
     H.wait_lsp("rust-analyzer", buf, 120000)
     local row, col = 1, #"#[derive(Serialize"
     local done
-    ma.on_derive_accepted("Serialize", { bufnr = buf, row = row, col = col, path = "serde::Serialize", crate = "serde" })
+    ma.on_derive_accepted(
+      "Serialize",
+      { bufnr = buf, row = row, col = col, path = "serde::Serialize", crate = "serde" }
+    )
     local ok = vim.wait(90000, function()
       for _, l in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
         if l:match("^use serde::Serialize;") then

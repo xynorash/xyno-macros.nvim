@@ -7,6 +7,8 @@ M.defaults = {
   commands = true, -- :MacroAttrs :MacroExpand :MacroFormatFix :MacroSignature :ProcMacroStatus
   keymaps = false, -- false | true | { expand = lhs|false, status = lhs|false, signature = lhs|false } (buffer-local in Rust buffers with rust-analyzer)
   snippets_allowed = nil, -- optional function(ctx) -> boolean: where select!/matches!/vec! snippets may appear
+  trust = "auto", -- who decides before `cargo expand` builds the crate: "auto" | "local" | function(root, what, cb)
+  popup = {}, -- layout of the macro popup: max_height, min_width, max_width, border, prefer (xyno_macros.ui.popup)
   attrs = {}, -- overrides of the attribute completion's tuning values (xyno_macros.attrs.config)
 }
 
@@ -21,8 +23,40 @@ local REQUIRED = {
   { "xyno_imports.engine", "xyno-imports.nvim (xynorash/xyno-imports.nvim)" },
 }
 
+--- The xyno-rust.nvim API this plugin was written against (see xyno_rust.compatible).
+M.requires_rust_api = "1.1"
+
+--- Fails with one clear line when xyno-rust.nvim is too old or too new for this plugin.
+local function rust_api_ok(name)
+  local ok, rust = pcall(require, "xyno_rust")
+  if not ok or type(rust.compatible) ~= "function" then
+    vim.notify(
+      name
+        .. ": the installed xyno-rust.nvim is too old to say which API it has (needs API "
+        .. M.requires_rust_api
+        .. "): update xyno-rust.nvim",
+      vim.log.levels.ERROR
+    )
+    return false
+  end
+  local good, why = rust.compatible(M.requires_rust_api)
+  if not good then
+    vim.notify(name .. ": " .. why, vim.log.levels.ERROR)
+    return false
+  end
+  return true
+end
+
 --- Configure and start the plugin. Safe to call again (autocmd groups are cleared and redefined).
----@param opts? { commands?: boolean, keymaps?: boolean|table<string, string|false>, snippets_allowed?: fun(ctx: table): boolean, attrs?: table }
+---@class xyno_macros.SetupOpts
+---@field commands? boolean
+---@field keymaps? boolean|table<string, string|false>
+---@field snippets_allowed? fun(ctx: table): boolean
+---@field trust? "auto"|"local"|fun(root: string, what: string, cb: fun(ok: boolean))
+---@field popup? table
+---@field attrs? table
+
+---@param opts? xyno_macros.SetupOpts
 function M.setup(opts)
   opts = vim.tbl_deep_extend("force", vim.deepcopy(M.defaults), opts or {})
   if vim.fn.has("nvim-0.12") ~= 1 then
@@ -35,11 +69,44 @@ function M.setup(opts)
       return
     end
   end
+  if not rust_api_ok("xyno-macros") then
+    return
+  end
+  if opts.trust == "auto" or opts.trust == "local" or type(opts.trust) == "function" then
+    require("xyno_macros.trust").config.provider = opts.trust
+  else
+    vim.notify('xyno-macros: option trust must be "auto", "local" or a function; using "auto"', vim.log.levels.WARN)
+    require("xyno_macros.trust").config.provider = "auto"
+  end
+  local problems = {}
+  local ui = require("xyno_macros.ui")
+  local pp = ui.validate_popup(opts.popup)
+  if #pp == 0 then
+    ui.set_popup(opts.popup)
+  else
+    vim.list_extend(problems, pp)
+    ui.set_popup({}) -- the defaults stay
+  end
+  ui.setup()
   local attrs = require("xyno_macros.attrs")
-  for k, v in pairs(opts.attrs) do
-    if attrs.config[k] ~= nil then
-      attrs.config[k] = v
+  if type(opts.attrs) ~= "table" then
+    problems[#problems + 1] = "attrs must be a table"
+  else
+    for k, v in pairs(opts.attrs) do
+      local cur = attrs.config[k]
+      if cur == nil then
+        problems[#problems + 1] = ("unknown attrs option `%s`"):format(tostring(k))
+      elseif type(v) ~= type(cur) then
+        problems[#problems + 1] = ("attrs.%s must be a %s, got %s"):format(k, type(cur), vim.inspect(v))
+      elseif type(v) == "number" and (v ~= v or v < 0 or v == math.huge) then
+        problems[#problems + 1] = ("attrs.%s must be a finite number, got %s"):format(k, vim.inspect(v))
+      else
+        attrs.config[k] = v
+      end
     end
+  end
+  if #problems > 0 then
+    vim.notify("xyno-macros: invalid options ignored:\n  " .. table.concat(problems, "\n  "), vim.log.levels.WARN)
   end
   attrs.setup({ commands = opts.commands })
   require("xyno_macros.tools").setup({

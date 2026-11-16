@@ -1,0 +1,234 @@
+{
+  "crate": "diesel",
+  "versions": ">=2.0.0, <3.0.0",
+  "docs_url": "https://docs.rs/diesel/latest/diesel/",
+  "verified": "2026-11-12 against docs.rs, diesel 2.3.14 (derives Insertable, AsChangeset, Selectable, Queryable, Associations, Identifiable, QueryableByName)",
+  "attributes": [
+    {
+      "name": "diesel",
+      "derives": [
+        "Queryable",
+        "Selectable",
+        "Insertable",
+        "AsChangeset",
+        "Identifiable",
+        "Associations",
+        "QueryableByName"
+      ],
+      "applies_to": [
+        "container",
+        "field"
+      ],
+      "docs_url": "https://docs.rs/diesel/latest/diesel/prelude/derive.Insertable.html",
+      "args": [
+        {
+          "key": "table_name",
+          "kind": "path",
+          "doc": "Table the type belongs to (path relative to the current module); default: snake_case type name plus an `s`.",
+          "applies_to": [
+            "container"
+          ],
+          "derives": [
+            "Selectable",
+            "Insertable",
+            "AsChangeset",
+            "Identifiable",
+            "Associations",
+            "QueryableByName"
+          ],
+          "snippet": "table_name = ${1:users}"
+        },
+        {
+          "key": "primary_key",
+          "kind": "flag",
+          "doc": "Field(s) that form the primary key; default `id`.",
+          "applies_to": [
+            "container"
+          ],
+          "derives": [
+            "AsChangeset",
+            "Identifiable"
+          ],
+          "snippet": "primary_key(${1:id})"
+        },
+        {
+          "key": "belongs_to",
+          "kind": "flag",
+          "doc": "Child-to-parent relationship; repeat for several parents.",
+          "applies_to": [
+            "container"
+          ],
+          "derives": [
+            "Associations"
+          ],
+          "repeatable": true,
+          "snippet": "belongs_to(${1:Parent})",
+          "alt": [
+            {
+              "label": "belongs_to(Parent, foreign_key = col)",
+              "snippet": "belongs_to(${1:Parent}, foreign_key = ${2:parent_id})",
+              "doc": "Name the foreign key column (default: parent type lowercase + _id)."
+            }
+          ]
+        },
+        {
+          "key": "check_for_backend",
+          "kind": "flag",
+          "doc": "Generate extra code for clearer type-mismatch errors; name the concrete backend(s).",
+          "applies_to": [
+            "container"
+          ],
+          "derives": [
+            "Selectable",
+            "QueryableByName"
+          ],
+          "snippet": "check_for_backend(${1:diesel::pg::Pg})"
+        },
+        {
+          "key": "treat_none_as_default_value",
+          "kind": "bool",
+          "doc": "Insert `DEFAULT` for None (true) or NULL (false). On a field it overrides the container setting.",
+          "applies_to": [
+            "container",
+            "field"
+          ],
+          "derives": [
+            "Insertable"
+          ],
+          "snippet": "treat_none_as_default_value = ${1:false}"
+        },
+        {
+          "key": "treat_none_as_null",
+          "kind": "bool",
+          "doc": "Write None as NULL instead of skipping the column. On a field it overrides the container setting.",
+          "applies_to": [
+            "container",
+            "field"
+          ],
+          "derives": [
+            "AsChangeset"
+          ],
+          "snippet": "treat_none_as_null = ${1:true}"
+        },
+        {
+          "key": "column_name",
+          "kind": "ident",
+          "doc": "Column this field maps to; default: the field name (required on every field of a tuple struct).",
+          "applies_to": [
+            "field"
+          ],
+          "derives": [
+            "Selectable",
+            "Insertable",
+            "AsChangeset",
+            "Associations",
+            "Identifiable",
+            "QueryableByName"
+          ],
+          "snippet": "column_name = ${1:column}"
+        },
+        {
+          "key": "embed",
+          "kind": "flag",
+          "doc": "The field's type implements the same derive itself, so one field maps to several columns.",
+          "applies_to": [
+            "field"
+          ],
+          "derives": [
+            "Selectable",
+            "Insertable",
+            "AsChangeset",
+            "QueryableByName"
+          ]
+        },
+        {
+          "key": "serialize_as",
+          "kind": "path",
+          "doc": "Convert the field with `.into()` to this type before serializing (not with `embed`).",
+          "applies_to": [
+            "field"
+          ],
+          "derives": [
+            "Insertable",
+            "AsChangeset"
+          ],
+          "snippet": "serialize_as = ${1:Type}"
+        },
+        {
+          "key": "deserialize_as",
+          "kind": "path",
+          "doc": "Deserialize the column as this type, then convert it into the field's type.",
+          "applies_to": [
+            "field"
+          ],
+          "derives": [
+            "Queryable",
+            "QueryableByName"
+          ],
+          "snippet": "deserialize_as = ${1:Type}"
+        },
+        {
+          "key": "skip_insertion",
+          "kind": "flag",
+          "doc": "Leave the field out of inserts (generated columns).",
+          "applies_to": [
+            "field"
+          ],
+          "derives": [
+            "Insertable"
+          ]
+        },
+        {
+          "key": "skip_update",
+          "kind": "flag",
+          "doc": "Leave the field out of updates (generated columns).",
+          "applies_to": [
+            "field"
+          ],
+          "derives": [
+            "AsChangeset"
+          ]
+        },
+        {
+          "key": "select_expression",
+          "kind": "expr",
+          "doc": "Replace the whole select expression for this field.",
+          "applies_to": [
+            "field"
+          ],
+          "derives": [
+            "Selectable"
+          ],
+          "snippet": "select_expression = ${1:expr}"
+        },
+        {
+          "key": "select_expression_type",
+          "kind": "path",
+          "doc": "Type of a custom select_expression when Diesel cannot infer it.",
+          "applies_to": [
+            "field"
+          ],
+          "derives": [
+            "Selectable"
+          ],
+          "requires": [
+            "select_expression"
+          ],
+          "snippet": "select_expression_type = ${1:Type}"
+        },
+        {
+          "key": "sql_type",
+          "kind": "path",
+          "doc": "SQL type of the field; takes precedence over the table column's.",
+          "applies_to": [
+            "field"
+          ],
+          "derives": [
+            "QueryableByName"
+          ],
+          "snippet": "sql_type = ${1:diesel::sql_types::Text}"
+        }
+      ]
+    }
+  ]
+}

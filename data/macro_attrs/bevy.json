@@ -1,0 +1,107 @@
+{
+  "crate": "bevy",
+  "versions": ">=0.20.0, <0.21.0",
+  "docs_url": "https://docs.rs/bevy_ecs/latest/bevy_ecs/component/trait.Component.html",
+  "verified": "2026-11-12 against docs.rs, bevy_ecs 0.20.1 (derive Component; earlier releases name some hooks differently, hence the narrow range)",
+  "attributes": [
+    {
+      "name": "component",
+      "derives": [
+        "Component"
+      ],
+      "applies_to": [
+        "container"
+      ],
+      "docs_url": "https://docs.rs/bevy_ecs/latest/bevy_ecs/component/trait.Component.html",
+      "args": [
+        {
+          "key": "immutable",
+          "kind": "flag",
+          "doc": "No mutable access to the component."
+        },
+        {
+          "key": "storage",
+          "kind": "enum",
+          "doc": "Storage type: Table (default, fast iteration) or SparseSet (frequent insert/remove).",
+          "values": [
+            "Table",
+            "SparseSet"
+          ],
+          "quoted": true,
+          "snippet": "storage = \"$1\""
+        },
+        {
+          "key": "on_add",
+          "kind": "path",
+          "doc": "Hook that runs when the component is added; bare `on_add` uses Self::on_add.",
+          "snippet": "on_add = ${1:hook}"
+        },
+        {
+          "key": "on_insert",
+          "kind": "path",
+          "doc": "Hook that runs when the component is inserted.",
+          "snippet": "on_insert = ${1:hook}"
+        },
+        {
+          "key": "on_discard",
+          "kind": "path",
+          "doc": "Hook that runs when the component is discarded.",
+          "snippet": "on_discard = ${1:hook}"
+        },
+        {
+          "key": "on_remove",
+          "kind": "path",
+          "doc": "Hook that runs when the component is removed.",
+          "snippet": "on_remove = ${1:hook}"
+        },
+        {
+          "key": "on_despawn",
+          "kind": "path",
+          "doc": "Hook that runs when the entity is despawned.",
+          "snippet": "on_despawn = ${1:hook}"
+        },
+        {
+          "key": "clone_behavior",
+          "kind": "ident",
+          "doc": "How the component is cloned (a ComponentCloneBehavior variant such as Ignore).",
+          "snippet": "clone_behavior = ${1:Ignore}"
+        },
+        {
+          "key": "summary_tick",
+          "kind": "flag",
+          "doc": "Track a summary tick so contiguous queries can skip unchanged tables (Table storage only)."
+        },
+        {
+          "key": "map_entities",
+          "kind": "flag",
+          "doc": "Use the component's MapEntities implementation (or a function: map_entities = path) to remap entities.",
+          "snippet": "map_entities"
+        }
+      ]
+    },
+    {
+      "name": "require",
+      "derives": [
+        "Component"
+      ],
+      "applies_to": [
+        "container"
+      ],
+      "docs_url": "https://docs.rs/bevy_ecs/latest/bevy_ecs/component/trait.Component.html",
+      "doc": "Components inserted automatically with this one: #[require(B, C)], with values #[require(B(1))] or an initializer #[require(C = init_c())].",
+      "args": []
+    },
+    {
+      "name": "entities",
+      "derives": [
+        "Component"
+      ],
+      "applies_to": [
+        "field"
+      ],
+      "docs_url": "https://docs.rs/bevy_ecs/latest/bevy_ecs/component/trait.Component.html",
+      "doc": "Marks a field that contains entities so they are remapped automatically (scenes, cloning).",
+      "args": []
+    }
+  ]
+}

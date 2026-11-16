@@ -53,6 +53,7 @@ independent and not affiliated with JetBrains.
                               -- :MacroSignature :ProcMacroStatus
       keymaps = false,        -- false | true | { expand, status, signature }
       snippets_allowed = nil, -- function(ctx) -> boolean
+      trust = "auto",         -- "auto" | "local" | function(root, what, cb)
       attrs = {},             -- tuning of the attribute completion
     })
 <
@@ -60,7 +61,16 @@ Safe to call again.
 
 `snippets_allowed(ctx)` decides where the `select!`, `matches!` and
 `vec![x; n]` snippets appear; ctx is blink's context (line, cursor, bufnr).
-The default offers them neither after a `.` nor inside a string or comment.
+The default refuses after a `.`, in strings and comments and in expression
+positions (call arguments, struct literal fields, macro token trees).
+
+                                                        *xyno-macros-trust*
+`cargo expand` builds the crate (build.rs and proc macros run), so
+|:MacroExpand|'s fallback asks for workspace trust first. `trust = "auto"` uses
+xyno_rust.trust (:RustTrust) when installed, else this plugin's interim check
+(stdpath("state")/xyno-macros/trust.json); "local" forces the interim check; a
+function(root, what, cb) replaces both. rust-analyzer's own expansion is not
+gated here. `:checkhealth xyno_macros` shows the provider in use.
 
                                                            *xyno-macros-config*
 `attrs` overrides values of `require("xyno_macros.attrs").config`:
@@ -102,7 +112,8 @@ blink.cmp starts, so it is not lazy-loaded by `ft` or `cmd`.
     Expand the macro under the cursor (rust-analyzer/expandMacro) in a
     read-only split. <CR> steps into the macro call under the cursor, <BS>
     goes back, `gi` lists the generated items, `q` closes. Falls back to
-    `cargo expand` where rust-analyzer expands nothing.
+    `cargo expand` where rust-analyzer expands nothing (after a trust question,
+|xyno-macros-trust|).
 
                                                               *:MacroFormatFix*
 :MacroFormatFix
